@@ -1,0 +1,19 @@
+name: WorkFlowy Automations
+version: "1.0.0"
+slug: workflowy_automations
+description: Runs private scheduled WorkFlowy automations.
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: application
+ports:
+  3210/tcp: 3210
+ports_description:
+  3210/tcp: WorkFlowy Recycle API
+options:
+  workflowy_api_key: null
+  manual_trigger_token: null
+schema:
+  workflowy_api_key: password
+  manual_trigger_token: password

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.0.2
+// @version      2.1.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -27,8 +27,13 @@ async function installWorkflowyRecycle() {
   const api = {
     get: key => GM.getValue(`workflowy-recycle:${key}`),
     set: (key, value) => GM.setValue(`workflowy-recycle:${key}`, value),
-    request: ({ url, method = 'GET', headers }) => {
-      if (new URL(url).host !== '192.168.1.30:3210') return Promise.reject(new Error('Host is not allowed'));
+    workflowyRequest: async ({ path, method = 'GET', apiKey }) => {
+      const response = await fetch(path, { method, headers: { Authorization: `Bearer ${apiKey}` } });
+      if (!response.ok) throw new Error('WorkFlowy request failed');
+      return response.json();
+    },
+    haRequest: ({ url, method = 'POST', headers }) => {
+      if (new URL(url).hostname !== '192.168.1.30') return Promise.reject(new Error('Host is not allowed'));
       return new Promise((resolve, reject) => GM.xmlHttpRequest({
         url, method, headers,
         onload: response => response.status >= 200 && response.status < 300
@@ -41,110 +46,140 @@ async function installWorkflowyRecycle() {
 
   if (document.querySelector('[data-workflowy-recycle-menu]')) return;
 
+  const style = { font: "'Segoe UI', sans-serif", color: '#000', background: '#fff', border: '1px solid #bfbfbf', borderRadius: '0' };
+  const buttonStyle = { padding: '4px 10px', font: 'inherit', color: 'inherit', background: '#fff', border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer' };
   const menu = document.createElement('div');
   menu.setAttribute('data-workflowy-recycle-menu', '');
-  Object.assign(menu.style, {
-    position: 'fixed', top: '72px', right: '12px', zIndex: '2147483647',
-    display: 'flex', alignItems: 'center', gap: '8px', padding: '6px',
-    fontFamily: "'Segoe UI', sans-serif", color: '#000', background: '#fff',
-    border: '1px solid #bfbfbf', borderRadius: '0'
-  });
+  Object.assign(menu.style, { position: 'fixed', top: '72px', right: '12px', zIndex: '2147483647', display: 'flex', alignItems: 'stretch', gap: '8px', padding: '6px', ...style });
 
-  const button = document.createElement('button');
-  button.textContent = 'Recycle';
-  Object.assign(button.style, {
-    padding: '4px 10px', font: 'inherit', color: 'inherit', background: '#fff',
-    border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer'
-  });
+  function section(name) {
+    const element = document.createElement('div');
+    element.setAttribute(`data-workflowy-${name}-section`, '');
+    Object.assign(element.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+    menu.appendChild(element);
+    return element;
+  }
 
-  const configureButton = document.createElement('button');
-  configureButton.textContent = 'Configurer';
-  Object.assign(configureButton.style, {
-    padding: '4px 10px', font: 'inherit', color: 'inherit', background: '#fff',
-    border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer'
-  });
+  function createButton(text) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    Object.assign(button.style, buttonStyle);
+    return button;
+  }
 
+  async function loadConfig() {
+    const config = await api.get('workflowy-menu:config') || {};
+    if (config.workflowyApiKey || config.haAction) return config;
+    const legacy = await api.get('workflowy-recycle:config');
+    return legacy?.endpoint ? { haAction: { name: 'Action HA', endpoint: legacy.endpoint, token: legacy.token } } : config;
+  }
+
+  function recyclableNodeIds(nodes) {
+    const byId = new Map(nodes.map(node => [node.id, node]));
+    const ids = new Set();
+    for (const node of nodes) {
+      if (!node.completed || !/(^|\s)#d(?=$|\s)/.test(node.name)) continue;
+      for (let current = node; current?.completed; current = byId.get(current.parent_id)) ids.add(current.id);
+    }
+    return [...ids];
+  }
+
+  const workflowy = section('recycle');
+  const recycle = createButton('Recycle');
+  const configure = createButton('Configurer');
   const status = document.createElement('span');
   status.setAttribute('aria-live', 'polite');
+  workflowy.appendChild(recycle);
+  workflowy.appendChild(configure);
+  workflowy.appendChild(status);
+
+  const homeAssistant = section('ha');
+  const action = createButton('Action HA');
+  homeAssistant.appendChild(action);
+  const initialConfig = await loadConfig();
+  action.textContent = initialConfig.haAction?.name || 'Action HA';
+
   const configPanel = document.createElement('div');
   configPanel.setAttribute('data-workflowy-recycle-config', '');
-  Object.assign(configPanel.style, {
-    position: 'absolute', top: '100%', right: '0', display: 'none', gap: '6px',
-    marginTop: '4px', padding: '6px', background: '#fff', border: '1px solid #bfbfbf'
-  });
+  Object.assign(configPanel.style, { position: 'absolute', top: '100%', right: '0', display: 'none', gap: '6px', marginTop: '4px', padding: '6px', ...style });
 
-  const endpointInput = document.createElement('input');
-  endpointInput.setAttribute('name', 'endpoint');
-  endpointInput.setAttribute('placeholder', 'URL du service');
-  Object.assign(endpointInput.style, { font: 'inherit', border: '1px solid #bfbfbf', borderRadius: '0' });
+  function input(name, placeholder, type = 'text') {
+    const field = document.createElement('input');
+    field.setAttribute('name', name);
+    field.setAttribute('type', type);
+    field.setAttribute('placeholder', placeholder);
+    Object.assign(field.style, { font: 'inherit', border: '1px solid #bfbfbf', borderRadius: '0' });
+    configPanel.appendChild(field);
+    return field;
+  }
 
-  const tokenInput = document.createElement('input');
-  tokenInput.setAttribute('name', 'token');
-  tokenInput.setAttribute('type', 'password');
-  tokenInput.setAttribute('placeholder', 'Jeton manuel');
-  Object.assign(tokenInput.style, { font: 'inherit', border: '1px solid #bfbfbf', borderRadius: '0' });
-
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Enregistrer';
-  Object.assign(saveButton.style, {
-    padding: '4px 10px', font: 'inherit', color: 'inherit', background: '#fff',
-    border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer'
-  });
-
-  configPanel.appendChild(endpointInput);
-  configPanel.appendChild(tokenInput);
-  configPanel.appendChild(saveButton);
-  menu.appendChild(button);
-  menu.appendChild(configureButton);
-  menu.appendChild(status);
+  const workflowyApiKey = input('workflowy-api-key', 'Clé API WorkFlowy', 'password');
+  const haName = input('ha-name', 'Libellé action HA');
+  const haEndpoint = input('ha-endpoint', 'URL action HA');
+  const haToken = input('ha-token', 'Jeton HA', 'password');
+  const save = createButton('Enregistrer');
+  configPanel.appendChild(save);
   menu.appendChild(configPanel);
   document.body.appendChild(menu);
 
-  configureButton.addEventListener('click', async () => {
-    const config = await api.get('workflowy-recycle:config');
-    endpointInput.value = config?.endpoint ?? '';
-    tokenInput.value = '';
+  configure.addEventListener('click', async () => {
+    const config = await loadConfig();
+    workflowyApiKey.value = config.workflowyApiKey || '';
+    haName.value = config.haAction?.name || 'Action HA';
+    haEndpoint.value = config.haAction?.endpoint || '';
+    haToken.value = '';
     configPanel.style.display = 'flex';
   });
 
-  saveButton.addEventListener('click', async () => {
-    const existing = await api.get('workflowy-recycle:config');
-    const config = { endpoint: endpointInput.value.trim(), token: tokenInput.value || existing?.token };
-    if (!config.endpoint || !config.token) {
-      status.textContent = 'Configuration requise';
-      return;
-    }
-    await api.set('workflowy-recycle:config', config);
-    tokenInput.value = '';
+  save.addEventListener('click', async () => {
+    const existing = await loadConfig();
+    const config = {
+      workflowyApiKey: workflowyApiKey.value || existing.workflowyApiKey,
+      haAction: {
+        name: haName.value.trim() || 'Action HA',
+        endpoint: haEndpoint.value.trim(),
+        token: haToken.value || existing.haAction?.token
+      }
+    };
+    await api.set('workflowy-menu:config', config);
+    action.textContent = config.haAction.name;
+    workflowyApiKey.value = '';
+    haToken.value = '';
     configPanel.style.display = 'none';
     status.textContent = 'Configuration enregistrée';
   });
 
-  button.addEventListener('click', async () => {
-    const config = await api.get('workflowy-recycle:config');
-    if (!config?.endpoint || !config?.token) {
-      status.textContent = 'Configuration requise';
+  recycle.addEventListener('click', async () => {
+    const config = await loadConfig();
+    if (!config.workflowyApiKey) {
+      status.textContent = 'Clé API WorkFlowy requise';
       return;
     }
-
-    button.disabled = true;
-    button.style.background = '#F0F0F0';
-    button.style.borderBottom = '2px solid #1677FF';
+    recycle.disabled = true;
     status.textContent = 'Recyclage…';
-
     try {
-      const result = JSON.parse(await api.request({
-        url: config.endpoint,
-        method: 'POST',
-        headers: { Authorization: `Bearer ${config.token}` }
-      }));
-      status.textContent = `${result.count} nœud${result.count === 1 ? '' : 's'} recyclé${result.count === 1 ? '' : 's'}`;
+      const exported = await api.workflowyRequest({ path: '/api/v1/nodes-export', apiKey: config.workflowyApiKey });
+      const ids = recyclableNodeIds(exported.nodes);
+      for (const id of ids) await api.workflowyRequest({ path: `/api/v1/nodes/${id}/uncomplete`, method: 'POST', apiKey: config.workflowyApiKey });
+      status.textContent = `${ids.length} nœud${ids.length === 1 ? '' : 's'} recyclé${ids.length === 1 ? '' : 's'}`;
     } catch {
       status.textContent = 'Erreur de recyclage';
     } finally {
-      button.disabled = false;
-      button.style.background = '#fff';
-      button.style.borderBottom = '1px solid #bfbfbf';
+      recycle.disabled = false;
+    }
+  });
+
+  action.addEventListener('click', async () => {
+    const config = await loadConfig();
+    if (!config.haAction?.endpoint || !config.haAction?.token) {
+      status.textContent = 'Action Home Assistant non configurée';
+      return;
+    }
+    try {
+      await api.haRequest({ url: config.haAction.endpoint, headers: { Authorization: `Bearer ${config.haAction.token}` } });
+      status.textContent = `${config.haAction.name} déclenchée`;
+    } catch {
+      status.textContent = 'Erreur Home Assistant';
     }
   });
 }

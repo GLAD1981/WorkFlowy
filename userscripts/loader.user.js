@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.0
+// @version      2.2.1
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -76,7 +76,7 @@ async function installWorkflowyRecycle() {
     function visit(item, ancestors) {
       const lineage = [...ancestors, item];
       if (item.isCompleted() && /(^|\s)#d(?=$|\s)/.test(item.getName())) {
-        lineage.filter(candidate => candidate.isCompleted() && !candidate.isReadOnly()).forEach(candidate => selected.add(candidate));
+        lineage.filter(candidate => candidate.isCompleted()).forEach(candidate => selected.add(candidate));
       }
       item.getChildren().forEach(child => visit(child, lineage));
     }

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "scripts": [
+    {
+      "id": "workflowy-recycle",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/GLAD1981/WorkFlowy/f341365b5eef58c9a4a5256a1dd9716897a14dc7/userscripts/modules/workflowy-recycle.js",
+      "matches": ["https://workflowy.com/*"],
+      "connect": ["service.example"],
+      "updatedAt": "2026-08-26T00:00:00Z"
+    }
+  ]
+}

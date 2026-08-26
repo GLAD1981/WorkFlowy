@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.0.0
+// @version      2.0.1
 // @match        https://workflowy.com/*
 // @match        https://outlook.office.com/*
 // @match        https://outlook.cloud.microsoft/*
@@ -42,7 +42,7 @@ async function installWorkflowyRecycle() {
   const menu = document.createElement('div');
   menu.setAttribute('data-workflowy-recycle-menu', '');
   Object.assign(menu.style, {
-    position: 'fixed', top: '12px', right: '12px', zIndex: '2147483647',
+    position: 'fixed', top: '72px', right: '12px', zIndex: '2147483647',
     display: 'flex', alignItems: 'center', gap: '8px', padding: '6px',
     fontFamily: "'Segoe UI', sans-serif", color: '#000', background: '#fff',
     border: '1px solid #bfbfbf', borderRadius: '0'

@@ -2,16 +2,32 @@
   "version": 1,
   "scripts": [
     {
+      "updatedAt": "2026-08-26T00:00:00Z",
+      "kind": "module",
+      "url": "https://raw.githubusercontent.com/GLAD1981/WorkFlowy/493b14edbc87c839132a41aa84976d271590028c/userscripts/modules/workflowy-recycle.js",
+      "id": "workflowy-recycle",
       "connect": [
         "192.168.1.30:3210"
       ],
       "matches": [
         "https://workflowy.com/*"
       ],
+      "version": "1.2.0"
+    },
+    {
       "updatedAt": "2026-08-26T00:00:00Z",
-      "version": "1.2.0",
-      "url": "https://raw.githubusercontent.com/GLAD1981/WorkFlowy/493b14edbc87c839132a41aa84976d271590028c/userscripts/modules/workflowy-recycle.js",
-      "id": "workflowy-recycle"
+      "kind": "userscript",
+      "url": "https://raw.githubusercontent.com/GLAD1981/Tampermonkey/fc5d720564a7f2250fd88518f17b330cd3f2acd4/BHVP-Volet-Outlook.user.js",
+      "id": "bhvp-outlook",
+      "connect": [],
+      "matches": [
+        "https://outlook.office.com/*",
+        "https://outlook.cloud.microsoft/*",
+        "https://outlook.office365.com/*",
+        "https://outlook.live.com/*",
+        "https://chatgpt.com/*"
+      ],
+      "version": "1.2.3"
     }
   ]
 }

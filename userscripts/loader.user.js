@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.4
+// @version      2.2.5
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -72,7 +72,7 @@ async function installWorkflowyRecycle() {
   }
 
   function recyclableItems(root) {
-    const selected = new Set();
+    const selected = new Map();
 
     function destinationOf(item) {
       const destination = item.data?.toDestination?.();
@@ -85,12 +85,14 @@ async function installWorkflowyRecycle() {
       if (item.isCompleted() && /(^|\s)#d(?=$|\s)/.test(item.getName())) {
         const target = destinationOf(item);
         const targetLineage = target === item ? lineage : [...target.getAncestors(), target];
-        targetLineage.filter(candidate => candidate.isCompleted()).forEach(candidate => selected.add(candidate));
+        targetLineage
+          .filter(candidate => candidate.isCompleted())
+          .forEach(candidate => selected.set(candidate.getId(), candidate));
       }
       item.getChildren().forEach(child => visit(child, lineage));
     }
     root.getChildren().forEach(child => visit(child, [root]));
-    return [...selected];
+    return [...selected.values()];
   }
 
   const workflowy = section('recycle');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.1.0
+// @version      2.2.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -13,6 +13,7 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @grant        GM.xmlHttpRequest
+// @grant        unsafeWindow
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -27,11 +28,7 @@ async function installWorkflowyRecycle() {
   const api = {
     get: key => GM.getValue(`workflowy-recycle:${key}`),
     set: (key, value) => GM.setValue(`workflowy-recycle:${key}`, value),
-    workflowyRequest: async ({ path, method = 'GET', apiKey }) => {
-      const response = await fetch(path, { method, headers: { Authorization: `Bearer ${apiKey}` } });
-      if (!response.ok) throw new Error('WorkFlowy request failed');
-      return response.json();
-    },
+    workflowy: unsafeWindow.WF,
     haRequest: ({ url, method = 'POST', headers }) => {
       if (new URL(url).hostname !== '192.168.1.30') return Promise.reject(new Error('Host is not allowed'));
       return new Promise((resolve, reject) => GM.xmlHttpRequest({
@@ -69,19 +66,22 @@ async function installWorkflowyRecycle() {
 
   async function loadConfig() {
     const config = await api.get('workflowy-menu:config') || {};
-    if (config.workflowyApiKey || config.haAction) return config;
+    if (config.haAction) return config;
     const legacy = await api.get('workflowy-recycle:config');
     return legacy?.endpoint ? { haAction: { name: 'Action HA', endpoint: legacy.endpoint, token: legacy.token } } : config;
   }
 
-  function recyclableNodeIds(nodes) {
-    const byId = new Map(nodes.map(node => [node.id, node]));
-    const ids = new Set();
-    for (const node of nodes) {
-      if (!node.completed || !/(^|\s)#d(?=$|\s)/.test(node.name)) continue;
-      for (let current = node; current?.completed; current = byId.get(current.parent_id)) ids.add(current.id);
+  function recyclableItems(root) {
+    const selected = new Set();
+    function visit(item, ancestors) {
+      const lineage = [...ancestors, item];
+      if (item.isCompleted() && /(^|\s)#d(?=$|\s)/.test(item.getName())) {
+        lineage.filter(candidate => candidate.isCompleted() && !candidate.isReadOnly()).forEach(candidate => selected.add(candidate));
+      }
+      item.getChildren().forEach(child => visit(child, lineage));
     }
-    return [...ids];
+    root.getChildren().forEach(child => visit(child, [root]));
+    return [...selected];
   }
 
   const workflowy = section('recycle');
@@ -113,7 +113,6 @@ async function installWorkflowyRecycle() {
     return field;
   }
 
-  const workflowyApiKey = input('workflowy-api-key', 'Clé API WorkFlowy', 'password');
   const haName = input('ha-name', 'Libellé action HA');
   const haEndpoint = input('ha-endpoint', 'URL action HA');
   const haToken = input('ha-token', 'Jeton HA', 'password');
@@ -124,7 +123,6 @@ async function installWorkflowyRecycle() {
 
   configure.addEventListener('click', async () => {
     const config = await loadConfig();
-    workflowyApiKey.value = config.workflowyApiKey || '';
     haName.value = config.haAction?.name || 'Action HA';
     haEndpoint.value = config.haAction?.endpoint || '';
     haToken.value = '';
@@ -134,7 +132,6 @@ async function installWorkflowyRecycle() {
   save.addEventListener('click', async () => {
     const existing = await loadConfig();
     const config = {
-      workflowyApiKey: workflowyApiKey.value || existing.workflowyApiKey,
       haAction: {
         name: haName.value.trim() || 'Action HA',
         endpoint: haEndpoint.value.trim(),
@@ -143,25 +140,24 @@ async function installWorkflowyRecycle() {
     };
     await api.set('workflowy-menu:config', config);
     action.textContent = config.haAction.name;
-    workflowyApiKey.value = '';
     haToken.value = '';
     configPanel.style.display = 'none';
     status.textContent = 'Configuration enregistrée';
   });
 
   recycle.addEventListener('click', async () => {
-    const config = await loadConfig();
-    if (!config.workflowyApiKey) {
-      status.textContent = 'Clé API WorkFlowy requise';
+    if (!api.workflowy?.rootItem) {
+      status.textContent = 'Runtime WorkFlowy indisponible';
       return;
     }
     recycle.disabled = true;
     status.textContent = 'Recyclage…';
     try {
-      const exported = await api.workflowyRequest({ path: '/api/v1/nodes-export', apiKey: config.workflowyApiKey });
-      const ids = recyclableNodeIds(exported.nodes);
-      for (const id of ids) await api.workflowyRequest({ path: `/api/v1/nodes/${id}/uncomplete`, method: 'POST', apiKey: config.workflowyApiKey });
-      status.textContent = `${ids.length} nœud${ids.length === 1 ? '' : 's'} recyclé${ids.length === 1 ? '' : 's'}`;
+      const items = recyclableItems(api.workflowy.rootItem());
+      api.workflowy.editGroup(() => items.forEach(item => api.workflowy.completeItem(item)));
+      const message = `${items.length} nœud${items.length === 1 ? '' : 's'} recyclé${items.length === 1 ? '' : 's'}`;
+      api.workflowy.showMessage(message);
+      status.textContent = message;
     } catch {
       status.textContent = 'Erreur de recyclage';
     } finally {

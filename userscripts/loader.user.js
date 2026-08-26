@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.3
+// @version      2.2.4
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -167,7 +167,8 @@ async function installWorkflowyRecycle() {
       const message = `${items.length} nœud${items.length === 1 ? '' : 's'} recyclé${items.length === 1 ? '' : 's'}`;
       api.workflowy.showMessage(message);
       status.textContent = message;
-    } catch {
+    } catch (error) {
+      console.error('[WorkFlowy recycle]', error);
       status.textContent = 'Erreur de recyclage';
     } finally {
       recycle.disabled = false;

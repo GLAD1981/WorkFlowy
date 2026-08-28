@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.6
+// @version      2.2.7
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -131,6 +131,78 @@ async function installWorkflowyRecycle() {
   configPanel.appendChild(save);
   menu.appendChild(configPanel);
   document.body.appendChild(menu);
+
+  const inboxId = '3deca3d27d28';
+  const filmsId = '1e0b2fc86478';
+  const seenInboxChildIds = new Set();
+  const routingInboxChildIds = new Set();
+  let inboxBaselineLoaded = false;
+
+  function findChild(parent, name) {
+    return parent.getChildren().find(child => child.getName().trim() === name);
+  }
+
+  function createChild(parent, name) {
+    const child = api.workflowy.createItem(parent, parent.getChildren().length);
+    api.workflowy.setItemName(child, name);
+    return child;
+  }
+
+  function findOrCreateChild(parent, name) {
+    return findChild(parent, name) || createChild(parent, name);
+  }
+
+  function parisFolderNames() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit'
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return {
+      year: `🎥 [ ${values.year} ]`,
+      month: `🎥 [ ${values.month}/${values.year} ]`
+    };
+  }
+
+  async function reconcileInbox() {
+    if (!api.workflowy?.getItemById) return;
+    const inbox = api.workflowy.getItemById(inboxId);
+    if (!inbox) return;
+    const children = inbox.getChildren();
+    if (!inboxBaselineLoaded) {
+      children.forEach(child => seenInboxChildIds.add(child.getId()));
+      inboxBaselineLoaded = true;
+      return;
+    }
+
+    for (const child of children) {
+      const childId = child.getId();
+      if (seenInboxChildIds.has(childId) || routingInboxChildIds.has(childId) || !child.getName().trim()) continue;
+      routingInboxChildIds.add(childId);
+      try {
+        const films = api.workflowy.getItemById(filmsId);
+        if (!films) continue;
+        const { year, month } = parisFolderNames();
+        const history = findOrCreateChild(films, '🎥 history');
+        const yearFolder = findOrCreateChild(history, year);
+        const monthFolder = findOrCreateChild(yearFolder, month);
+        api.workflowy.moveItems([child], monthFolder);
+        seenInboxChildIds.add(childId);
+      } finally {
+        routingInboxChildIds.delete(childId);
+      }
+    }
+  }
+
+  async function startInboxRouting() {
+    await reconcileInbox();
+    if (typeof MutationObserver !== 'function') return;
+    const observer = new MutationObserver(() => reconcileInbox());
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+  }
+
+  await startInboxRouting();
 
   configure.addEventListener('click', async () => {
     const config = await loadConfig();

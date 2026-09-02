@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.7
+// @version      2.2.8
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -28,7 +28,7 @@ async function installWorkflowyRecycle() {
   const api = {
     get: key => GM.getValue(`workflowy-recycle:${key}`),
     set: (key, value) => GM.setValue(`workflowy-recycle:${key}`, value),
-    workflowy: unsafeWindow.WF,
+    get workflowy() { return unsafeWindow.WF; },
     haRequest: ({ url, method = 'POST', headers }) => {
       if (new URL(url).hostname !== '192.168.1.30') return Promise.reject(new Error('Host is not allowed'));
       return new Promise((resolve, reject) => GM.xmlHttpRequest({
@@ -137,6 +137,7 @@ async function installWorkflowyRecycle() {
   const seenInboxChildIds = new Set();
   const routingInboxChildIds = new Set();
   let inboxBaselineLoaded = false;
+  let inboxReconciliation = null;
 
   function findChild(parent, name) {
     return parent.getChildren().find(child => child.getName().trim() === name);
@@ -166,8 +167,9 @@ async function installWorkflowyRecycle() {
   }
 
   async function reconcileInbox() {
-    if (!api.workflowy?.getItemById) return;
-    const inbox = api.workflowy.getItemById(inboxId);
+    const workflowy = api.workflowy;
+    if (!workflowy?.getItemById) return;
+    const inbox = workflowy.getItemById(inboxId);
     if (!inbox) return;
     const children = inbox.getChildren();
     if (!inboxBaselineLoaded) {
@@ -181,13 +183,13 @@ async function installWorkflowyRecycle() {
       if (seenInboxChildIds.has(childId) || routingInboxChildIds.has(childId) || !child.getName().trim()) continue;
       routingInboxChildIds.add(childId);
       try {
-        const films = api.workflowy.getItemById(filmsId);
+        const films = workflowy.getItemById(filmsId);
         if (!films) continue;
         const { year, month } = parisFolderNames();
         const history = findOrCreateChild(films, '🎥 history');
         const yearFolder = findOrCreateChild(history, year);
         const monthFolder = findOrCreateChild(yearFolder, month);
-        api.workflowy.moveItems([child], monthFolder);
+        workflowy.moveItems([child], monthFolder);
         seenInboxChildIds.add(childId);
       } finally {
         routingInboxChildIds.delete(childId);
@@ -195,14 +197,23 @@ async function installWorkflowyRecycle() {
     }
   }
 
-  async function startInboxRouting() {
-    await reconcileInbox();
+  function scheduleInboxReconciliation() {
+    if (inboxReconciliation) return inboxReconciliation;
+    inboxReconciliation = reconcileInbox()
+      .catch(error => console.error('[WorkFlowy inbox routing]', error))
+      .finally(() => { inboxReconciliation = null; });
+    return inboxReconciliation;
+  }
+
+  function startInboxRouting() {
+    scheduleInboxReconciliation();
+    setInterval(scheduleInboxReconciliation, 500);
     if (typeof MutationObserver !== 'function') return;
-    const observer = new MutationObserver(() => reconcileInbox());
+    const observer = new MutationObserver(scheduleInboxReconciliation);
     observer.observe(document.body, { childList: true, characterData: true, subtree: true });
   }
 
-  await startInboxRouting();
+  startInboxRouting();
 
   configure.addEventListener('click', async () => {
     const config = await loadConfig();

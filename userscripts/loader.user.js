@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.9
+// @version      2.3.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -136,7 +136,6 @@ async function installWorkflowyRecycle() {
   document.body.appendChild(menu);
 
   const inboxId = '3deca3d27d28';
-  const filmsId = '1e0b2fc86478';
   const seenInboxChildIds = new Set();
   const routingInboxChildIds = new Set();
   let inboxBaselineLoaded = false;
@@ -186,14 +185,14 @@ async function installWorkflowyRecycle() {
       if (seenInboxChildIds.has(childId) || routingInboxChildIds.has(childId) || !child.getName().trim()) continue;
       routingInboxChildIds.add(childId);
       try {
-        const films = workflowy.getItemById(filmsId);
-        if (!films) continue;
+        const history = inbox.getParent?.();
+        if (!history) continue;
         const { year, month } = parisFolderNames();
-        const history = findOrCreateChild(films, '🎥 history');
         const yearFolder = findOrCreateChild(history, year);
         const monthFolder = findOrCreateChild(yearFolder, month);
-        workflowy.moveItems([child], monthFolder);
+        await workflowy.moveItems([child], monthFolder);
         seenInboxChildIds.add(childId);
+        workflowy.zoomTo(child);
       } finally {
         routingInboxChildIds.delete(childId);
       }

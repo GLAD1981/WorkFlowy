@@ -31,7 +31,7 @@ function loadInstaller(context) {
   return vm.runInNewContext(`${source.slice(start, end)}; installWorkflowyRecycle;`, context);
 }
 
-test('routes a new Inbox child from the native WorkFlowy tree without a DOM mutation', async () => {
+test('routes a new Inbox child through its parent and focuses the moved node', async () => {
   const document = createDocument();
   const intervals = [];
   const unsafeWindow = {};
@@ -54,24 +54,31 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
     id, name, children: itemChildren,
     getId() { return this.id; },
     getName() { return this.name; },
-    getChildren() { return this.children; }
+    getChildren() { return this.children; },
+    getParent() { return this.parent; }
   });
   const inbox = item('3deca3d27d28', '🎥 Inbox', children);
-  const history = item('history', '🎥 history');
-  const films = item('1e0b2fc86478', '🎥 films #d', [history]);
-  const items = new Map([[inbox.id, inbox], [history.id, history], [films.id, films]]);
+  const history = item('history', '🎥 history', [inbox]);
+  inbox.parent = history;
+  const items = new Map([[inbox.id, inbox], [history.id, history]]);
   const moves = [];
+  const focused = [];
   let sequence = 0;
   context.WF = {
     getItemById: id => items.get(id),
     createItem(parent, rank) {
       const folder = item(`folder-${sequence++}`, '');
+      folder.parent = parent;
       parent.children.splice(rank, 0, folder);
       items.set(folder.id, folder);
       return folder;
     },
     setItemName(node, name) { node.name = name; },
-    moveItems(nodes, parent) { moves.push({ nodes, parent }); }
+    moveItems(nodes, parent) {
+      moves.push({ nodes, parent });
+      nodes.forEach(node => { node.parent = parent; });
+    },
+    zoomTo(node) { focused.push(node); }
   };
 
   const installer = loadInstaller(context);
@@ -85,7 +92,8 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
 
   assert.equal(moves.length, 1);
   assert.equal(moves[0].nodes[0], newFilm);
-  assert.equal(moves[0].parent, history.children[0].children[0]);
-  assert.equal(history.children[0].getName(), '🎥 [ 2026 ]');
-  assert.equal(history.children[0].children[0].getName(), '🎥 [ 09/2026 ]');
+  const yearFolder = history.getChildren().find(node => node.getName() === '🎥 [ 2026 ]');
+  const monthFolder = yearFolder.getChildren().find(node => node.getName() === '🎥 [ 09/2026 ]');
+  assert.equal(moves[0].parent, monthFolder);
+  assert.deepEqual(focused, [newFilm]);
 });

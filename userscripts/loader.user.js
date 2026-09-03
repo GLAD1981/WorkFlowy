@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.2.8
+// @version      2.2.9
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -21,6 +21,7 @@
 // @grant        GM_setClipboard
 // @connect      192.168.1.30
 // @run-at       document-idle
+// @sandbox      raw
 // @noframes
 // ==/UserScript==
 
@@ -28,7 +29,9 @@ async function installWorkflowyRecycle() {
   const api = {
     get: key => GM.getValue(`workflowy-recycle:${key}`),
     set: (key, value) => GM.setValue(`workflowy-recycle:${key}`, value),
-    get workflowy() { return unsafeWindow.WF; },
+    get workflowy() {
+      return typeof WF !== 'undefined' ? WF : unsafeWindow.WF;
+    },
     haRequest: ({ url, method = 'POST', headers }) => {
       if (new URL(url).hostname !== '192.168.1.30') return Promise.reject(new Error('Host is not allowed'));
       return new Promise((resolve, reject) => GM.xmlHttpRequest({

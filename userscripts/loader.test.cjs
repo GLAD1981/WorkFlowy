@@ -38,7 +38,7 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
   class FixedDate extends Date {
     constructor(...args) { super(...(args.length ? args : ['2026-09-02T12:00:00Z'])); }
   }
-  const installer = loadInstaller({
+  const context = {
     document,
     unsafeWindow,
     GM: { getValue: async () => ({}), setValue: async () => {} },
@@ -47,10 +47,7 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
     Date: FixedDate,
     Intl,
     console
-  });
-
-  await installer();
-  assert.equal(intervals.length, 1, 'the router must poll the native WorkFlowy tree');
+  };
 
   const children = [];
   const item = (id, name, itemChildren = []) => ({
@@ -65,7 +62,7 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
   const items = new Map([[inbox.id, inbox], [history.id, history], [films.id, films]]);
   const moves = [];
   let sequence = 0;
-  unsafeWindow.WF = {
+  context.WF = {
     getItemById: id => items.get(id),
     createItem(parent, rank) {
       const folder = item(`folder-${sequence++}`, '');
@@ -76,6 +73,10 @@ test('routes a new Inbox child from the native WorkFlowy tree without a DOM muta
     setItemName(node, name) { node.name = name; },
     moveItems(nodes, parent) { moves.push({ nodes, parent }); }
   };
+
+  const installer = loadInstaller(context);
+  await installer();
+  assert.equal(intervals.length, 1, 'the router must poll the native WorkFlowy tree');
 
   await intervals[0]();
   const newFilm = item('new-film', 'Film de test');

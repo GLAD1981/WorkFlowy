@@ -16,11 +16,13 @@
   identifiant n'est donc pas codé en dur. Après déplacement, le routeur étend
   `history`, l'année et le mois, puis sélectionne le nœud déplacé : son bullet
   reste visible, sans changement de zoom.
+- Les nouvelles années et nouveaux mois sont insérés au premier rang de leur
+  parent : la hiérarchie est antéchronologique, sans modifier l'ordre existant.
 - Le test de régression est `userscripts/loader.test.cjs`, à lancer avec
   `node --test userscripts/loader.test.cjs`. Il vérifie l'ajout d'un enfant de
   l'Inbox sans mutation DOM, puis son déplacement vers `🎥 history > 🎥 [ 2026 ]
   > 🎥 [ 09/2026 ]` avec une date Europe/Paris.
 - Le test couvre aussi le cas `WF` direct / `unsafeWindow.WF` absent, le parent
   dynamique de l'Inbox, l'expansion de la hiérarchie et la sélection du nœud.
-  La mise à jour porte la version Tampermonkey à `2.3.1` afin de déclencher la
+  La mise à jour porte la version Tampermonkey à `2.3.2` afin de déclencher la
   mise à jour automatique.

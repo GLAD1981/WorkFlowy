@@ -97,6 +97,8 @@ test('routes a new Inbox child through its parent with visible expanded ancestry
   const yearFolder = history.getChildren().find(node => node.getName() === '🎥 [ 2026 ]');
   const monthFolder = yearFolder.getChildren().find(node => node.getName() === '🎥 [ 09/2026 ]');
   assert.equal(moves[0].parent, monthFolder);
+  assert.equal(history.getChildren()[0], yearFolder);
+  assert.equal(yearFolder.getChildren()[0], monthFolder);
   assert.deepEqual(expanded, [history, yearFolder, monthFolder]);
   assert.equal(selections.length, 1);
   assert.equal(selections[0][0], newFilm);

@@ -65,6 +65,7 @@ test('routes a new simple history child without re-routing folders it creates', 
   const moves = [];
   const expanded = [];
   const selections = [];
+  const edited = [];
   let sequence = 0;
   context.WF = {
     getItemById: id => items.get(id),
@@ -81,7 +82,8 @@ test('routes a new simple history child without re-routing folders it creates', 
       nodes.forEach(node => { node.parent = parent; });
     },
     expandItem(node) { expanded.push(node); },
-    setSelection(nodes) { selections.push(nodes); }
+    setSelection(nodes) { selections.push(nodes); },
+    editItemName(node) { edited.push(node); }
   };
 
   const installer = loadInstaller(context);
@@ -102,8 +104,8 @@ test('routes a new simple history child without re-routing folders it creates', 
   assert.equal(history.getChildren()[0], yearFolder);
   assert.equal(yearFolder.getChildren()[0], monthFolder);
   assert.deepEqual(expanded, [history, yearFolder, monthFolder]);
-  assert.equal(selections.length, 1);
-  assert.equal(selections[0][0], newFilm);
+  assert.equal(selections.length, 0);
+  assert.deepEqual(edited, [newFilm]);
   await intervals[0]();
   assert.equal(moves.length, 1);
 });

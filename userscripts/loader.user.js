@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.4.0
+// @version      2.4.1
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -194,7 +194,7 @@ async function installWorkflowyRecycle() {
         workflowy.expandItem(history);
         workflowy.expandItem(yearFolder);
         workflowy.expandItem(monthFolder);
-        workflowy.setSelection([child]);
+        workflowy.editItemName(child);
       } finally {
         routingHistoryChildIds.delete(childId);
       }

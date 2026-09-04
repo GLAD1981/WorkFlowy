@@ -13,13 +13,14 @@
   minimal correspondant au diagnostic ; il reste à le valider sur une session
   WorkFlowy connectée avec un nouvel enfant de l'Inbox.
 - Le dossier `🎥 history` est désormais déterminé par `Inbox.getParent()` : son
-  identifiant n'est donc pas codé en dur. Après déplacement, le routeur zoome
-  sur le nœud déplacé pour le laisser visible dans son emplacement mensuel.
+  identifiant n'est donc pas codé en dur. Après déplacement, le routeur étend
+  `history`, l'année et le mois, puis sélectionne le nœud déplacé : son bullet
+  reste visible, sans changement de zoom.
 - Le test de régression est `userscripts/loader.test.cjs`, à lancer avec
   `node --test userscripts/loader.test.cjs`. Il vérifie l'ajout d'un enfant de
   l'Inbox sans mutation DOM, puis son déplacement vers `🎥 history > 🎥 [ 2026 ]
   > 🎥 [ 09/2026 ]` avec une date Europe/Paris.
 - Le test couvre aussi le cas `WF` direct / `unsafeWindow.WF` absent, le parent
-  dynamique de l'Inbox et le zoom sur le nœud déplacé. La mise à jour porte la
-  version Tampermonkey à `2.3.0` afin de déclencher la
+  dynamique de l'Inbox, l'expansion de la hiérarchie et la sélection du nœud.
+  La mise à jour porte la version Tampermonkey à `2.3.1` afin de déclencher la
   mise à jour automatique.

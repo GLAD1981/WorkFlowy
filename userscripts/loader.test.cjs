@@ -31,7 +31,7 @@ function loadInstaller(context) {
   return vm.runInNewContext(`${source.slice(start, end)}; installWorkflowyRecycle;`, context);
 }
 
-test('routes a new Inbox child through its parent and focuses the moved node', async () => {
+test('routes a new Inbox child through its parent with visible expanded ancestry', async () => {
   const document = createDocument();
   const intervals = [];
   const unsafeWindow = {};
@@ -62,7 +62,8 @@ test('routes a new Inbox child through its parent and focuses the moved node', a
   inbox.parent = history;
   const items = new Map([[inbox.id, inbox], [history.id, history]]);
   const moves = [];
-  const focused = [];
+  const expanded = [];
+  const selections = [];
   let sequence = 0;
   context.WF = {
     getItemById: id => items.get(id),
@@ -78,7 +79,8 @@ test('routes a new Inbox child through its parent and focuses the moved node', a
       moves.push({ nodes, parent });
       nodes.forEach(node => { node.parent = parent; });
     },
-    zoomTo(node) { focused.push(node); }
+    expandItem(node) { expanded.push(node); },
+    setSelection(nodes) { selections.push(nodes); }
   };
 
   const installer = loadInstaller(context);
@@ -95,5 +97,7 @@ test('routes a new Inbox child through its parent and focuses the moved node', a
   const yearFolder = history.getChildren().find(node => node.getName() === '🎥 [ 2026 ]');
   const monthFolder = yearFolder.getChildren().find(node => node.getName() === '🎥 [ 09/2026 ]');
   assert.equal(moves[0].parent, monthFolder);
-  assert.deepEqual(focused, [newFilm]);
+  assert.deepEqual(expanded, [history, yearFolder, monthFolder]);
+  assert.equal(selections.length, 1);
+  assert.equal(selections[0][0], newFilm);
 });

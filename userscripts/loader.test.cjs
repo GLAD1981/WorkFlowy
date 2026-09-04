@@ -31,7 +31,7 @@ function loadInstaller(context) {
   return vm.runInNewContext(`${source.slice(start, end)}; installWorkflowyRecycle;`, context);
 }
 
-test('routes a new Inbox child through its parent with visible expanded ancestry', async () => {
+test('routes a new simple history child without re-routing folders it creates', async () => {
   const document = createDocument();
   const intervals = [];
   const unsafeWindow = {};
@@ -57,10 +57,11 @@ test('routes a new Inbox child through its parent with visible expanded ancestry
     getChildren() { return this.children; },
     getParent() { return this.parent; }
   });
-  const inbox = item('3deca3d27d28', '🎥 Inbox', children);
-  const history = item('history', '🎥 history', [inbox]);
-  inbox.parent = history;
-  const items = new Map([[inbox.id, inbox], [history.id, history]]);
+  const history = item('cb6bcd3bf1ba', '🎥 history', children);
+  const previousYear = item('old-year', '🎥 [ 2025 ]');
+  previousYear.parent = history;
+  children.push(previousYear);
+  const items = new Map([[history.id, history]]);
   const moves = [];
   const expanded = [];
   const selections = [];
@@ -89,6 +90,7 @@ test('routes a new Inbox child through its parent with visible expanded ancestry
 
   await intervals[0]();
   const newFilm = item('new-film', 'Film de test');
+  newFilm.parent = history;
   children.push(newFilm);
   await intervals[0]();
 
@@ -102,4 +104,6 @@ test('routes a new Inbox child through its parent with visible expanded ancestry
   assert.deepEqual(expanded, [history, yearFolder, monthFolder]);
   assert.equal(selections.length, 1);
   assert.equal(selections[0][0], newFilm);
+  await intervals[0]();
+  assert.equal(moves.length, 1);
 });

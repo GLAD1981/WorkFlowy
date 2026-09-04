@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.3.2
+// @version      2.4.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -135,11 +135,11 @@ async function installWorkflowyRecycle() {
   menu.appendChild(configPanel);
   document.body.appendChild(menu);
 
-  const inboxId = '3deca3d27d28';
-  const seenInboxChildIds = new Set();
-  const routingInboxChildIds = new Set();
-  let inboxBaselineLoaded = false;
-  let inboxReconciliation = null;
+  const historyId = 'cb6bcd3bf1ba';
+  const seenHistoryChildIds = new Set();
+  const routingHistoryChildIds = new Set();
+  let historyBaselineLoaded = false;
+  let historyReconciliation = null;
 
   function findChild(parent, name) {
     return parent.getChildren().find(child => child.getName().trim() === name);
@@ -168,57 +168,56 @@ async function installWorkflowyRecycle() {
     };
   }
 
-  async function reconcileInbox() {
+  async function reconcileHistory() {
     const workflowy = api.workflowy;
     if (!workflowy?.getItemById) return;
-    const inbox = workflowy.getItemById(inboxId);
-    if (!inbox) return;
-    const children = inbox.getChildren();
-    if (!inboxBaselineLoaded) {
-      children.forEach(child => seenInboxChildIds.add(child.getId()));
-      inboxBaselineLoaded = true;
+    const history = workflowy.getItemById(historyId);
+    if (!history) return;
+    const children = history.getChildren();
+    if (!historyBaselineLoaded) {
+      children.forEach(child => seenHistoryChildIds.add(child.getId()));
+      historyBaselineLoaded = true;
       return;
     }
 
     for (const child of children) {
       const childId = child.getId();
-      if (seenInboxChildIds.has(childId) || routingInboxChildIds.has(childId) || !child.getName().trim()) continue;
-      routingInboxChildIds.add(childId);
+      if (seenHistoryChildIds.has(childId) || routingHistoryChildIds.has(childId) || !child.getName().trim() || child.getChildren().length) continue;
+      routingHistoryChildIds.add(childId);
       try {
-        const history = inbox.getParent?.();
-        if (!history) continue;
         const { year, month } = parisFolderNames();
         const yearFolder = findOrCreateChild(history, year);
         const monthFolder = findOrCreateChild(yearFolder, month);
         await workflowy.moveItems([child], monthFolder);
-        seenInboxChildIds.add(childId);
+        seenHistoryChildIds.add(childId);
+        seenHistoryChildIds.add(yearFolder.getId());
         workflowy.expandItem(history);
         workflowy.expandItem(yearFolder);
         workflowy.expandItem(monthFolder);
         workflowy.setSelection([child]);
       } finally {
-        routingInboxChildIds.delete(childId);
+        routingHistoryChildIds.delete(childId);
       }
     }
   }
 
-  function scheduleInboxReconciliation() {
-    if (inboxReconciliation) return inboxReconciliation;
-    inboxReconciliation = reconcileInbox()
-      .catch(error => console.error('[WorkFlowy inbox routing]', error))
-      .finally(() => { inboxReconciliation = null; });
-    return inboxReconciliation;
+  function scheduleHistoryReconciliation() {
+    if (historyReconciliation) return historyReconciliation;
+    historyReconciliation = reconcileHistory()
+      .catch(error => console.error('[WorkFlowy history routing]', error))
+      .finally(() => { historyReconciliation = null; });
+    return historyReconciliation;
   }
 
-  function startInboxRouting() {
-    scheduleInboxReconciliation();
-    setInterval(scheduleInboxReconciliation, 500);
+  function startHistoryRouting() {
+    scheduleHistoryReconciliation();
+    setInterval(scheduleHistoryReconciliation, 500);
     if (typeof MutationObserver !== 'function') return;
-    const observer = new MutationObserver(scheduleInboxReconciliation);
+    const observer = new MutationObserver(scheduleHistoryReconciliation);
     observer.observe(document.body, { childList: true, characterData: true, subtree: true });
   }
 
-  startInboxRouting();
+  startHistoryRouting();
 
   configure.addEventListener('click', async () => {
     const config = await loadConfig();

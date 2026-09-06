@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.5.0
+// @version      2.6.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -81,10 +81,15 @@ async function installWorkflowyRecycle() {
   document.body.appendChild(menu);
 
   const historyId = 'cb6bcd3bf1ba';
+  const weatherNodeId = '5989c44498ec';
+  const parisLatitude = '48.8566';
+  const parisLongitude = '2.3522';
   const seenHistoryChildIds = new Set();
   const routingHistoryChildIds = new Set();
   let historyBaselineLoaded = false;
   let historyReconciliation = null;
+  let weatherReconciliation = null;
+  let weatherLastRefreshDay = null;
 
   function findChild(parent, name) {
     return parent.getChildren().find(child => child.getName().trim() === name);
@@ -146,6 +151,68 @@ async function installWorkflowyRecycle() {
     }
   }
 
+  function requestWeather(url) {
+    if (typeof GM === 'undefined' || typeof GM.xmlHttpRequest !== 'function') {
+      return Promise.reject(new Error('GM.xmlHttpRequest indisponible'));
+    }
+    return new Promise((resolve, reject) => GM.xmlHttpRequest({
+      url,
+      method: 'GET',
+      responseType: 'json',
+      onload: response => {
+        if (response.status < 200 || response.status >= 300) {
+          reject(new Error(`Météo HTTP ${response.status}`));
+          return;
+        }
+        try {
+          resolve(response.response ?? JSON.parse(response.responseText));
+        } catch (error) {
+          reject(error);
+        }
+      },
+      onerror: () => reject(new Error('Requête météo impossible'))
+    }));
+  }
+
+  function formatWeatherDate(isoDate) {
+    const [year, month, day] = String(isoDate).split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  async function reconcileWeather() {
+    const workflowy = api.workflowy;
+    if (!workflowy?.getItemById || typeof workflowy.setItemNote !== 'function') return;
+    const weatherNode = workflowy.getItemById(weatherNodeId);
+    if (!weatherNode || weatherReconciliation) return;
+    const dayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const today = Object.fromEntries(dayParts.map(part => [part.type, part.value]));
+    const refreshDay = `${today.year}-${today.month}-${today.day}`;
+    if (weatherLastRefreshDay === refreshDay) return;
+    weatherLastRefreshDay = refreshDay;
+    weatherReconciliation = (async () => {
+      const query = [
+        `latitude=${parisLatitude}`,
+        `longitude=${parisLongitude}`,
+        'daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+        'forecast_days=2',
+        'timezone=Europe%2FParis'
+      ].join('&');
+      const forecast = await requestWeather(`https://api.open-meteo.com/v1/forecast?${query}`);
+      const daily = forecast?.daily;
+      if (!daily?.time?.[1]) return;
+      const note = `Météo Paris — ${formatWeatherDate(daily.time[1])} : maximale ${daily.temperature_2m_max?.[1]} °C, minimale ${daily.temperature_2m_min?.[1]} °C, pluie ${daily.precipitation_probability_max?.[1]} %`;
+      workflowy.setItemNote(weatherNode, note);
+    })()
+      .catch(error => {
+        weatherLastRefreshDay = null;
+        console.error('[WorkFlowy weather]', error);
+      })
+      .finally(() => { weatherReconciliation = null; });
+    return weatherReconciliation;
+  }
+
   function scheduleHistoryReconciliation() {
     if (historyReconciliation) return historyReconciliation;
     historyReconciliation = reconcileHistory()
@@ -156,9 +223,17 @@ async function installWorkflowyRecycle() {
 
   function startHistoryRouting() {
     scheduleHistoryReconciliation();
-    setInterval(scheduleHistoryReconciliation, 500);
+    reconcileWeather();
+    setInterval(() => {
+      const historyPromise = scheduleHistoryReconciliation();
+      reconcileWeather();
+      return historyPromise;
+    }, 500);
     if (typeof MutationObserver !== 'function') return;
-    const observer = new MutationObserver(scheduleHistoryReconciliation);
+    const observer = new MutationObserver(() => {
+      scheduleHistoryReconciliation();
+      reconcileWeather();
+    });
     observer.observe(document.body, { childList: true, characterData: true, subtree: true });
   }
 

@@ -116,3 +116,45 @@ test('routes a new simple history child without re-routing folders it creates', 
   await intervals[0]();
   assert.equal(moves.length, 1);
 });
+
+test('writes tomorrow Paris weather to the configured WorkFlowy note', async () => {
+  const document = createDocument();
+  const intervals = [];
+  const requests = [];
+  const notes = [];
+  const weatherNode = { getId: () => '5989c44498ec', getName: () => 'je regarde la météo', getChildren: () => [] };
+  const context = {
+    document,
+    unsafeWindow: {},
+    GM: {
+      xmlHttpRequest: options => {
+        requests.push(options.url);
+        options.onload({ status: 200, responseText: JSON.stringify({ daily: {
+          time: ['2026-09-06', '2026-09-07'],
+          temperature_2m_max: [21, 24],
+          temperature_2m_min: [12, 14],
+          precipitation_probability_max: [10, 35]
+        } }) });
+      }
+    },
+    setTimeout: () => {},
+    setInterval: callback => { intervals.push(callback); },
+    Date,
+    Intl,
+    console
+  };
+  context.WF = {
+    getItemById: id => id === weatherNode.getId() ? weatherNode : null,
+    setItemNote: (node, note) => notes.push({ node, note })
+  };
+
+  const installer = loadInstaller(context);
+  await installer();
+  await intervals[0]();
+
+  assert.equal(requests.length, 1);
+  assert.match(requests[0], /latitude=48\.8566/);
+  assert.match(requests[0], /longitude=2\.3522/);
+  assert.match(requests[0], /timezone=Europe%2FParis/);
+  assert.deepEqual(notes, [{ node: weatherNode, note: 'Météo Paris — 07/09/2026 : maximale 24 °C, minimale 14 °C, pluie 35 %' }]);
+});

@@ -39,3 +39,16 @@
 - `GM.xmlHttpRequest` est conservé pour l'étape météo suivante, avec accès
   autorisé à `api.open-meteo.com`.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (1 test).
+
+## 2026-09-06 — note météo Paris
+
+- Version du loader : `2.6.0`.
+- Le nœud `5989c44498ec` reçoit automatiquement une note avec la maximale,
+  la minimale et la probabilité maximale de pluie du lendemain à Paris
+  (`48.8566, 2.3522`).
+- La requête utilise l'API Forecast Open-Meteo, le paramètre
+  `timezone=Europe/Paris` et les agrégats quotidiens natifs. Elle passe par
+  `GM.xmlHttpRequest`, sans lecture du DOM.
+- La note est actualisée au plus une fois par jour et le mécanisme reste
+  capable de détecter un nœud météo apparu après le chargement.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (2 tests).

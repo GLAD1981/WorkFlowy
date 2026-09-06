@@ -1,16 +1,18 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.6.0
+// @version      2.7.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
+// @match        https://to-do.live.com/*
 // @match        https://outlook.office.com/*
 // @match        https://outlook.cloud.microsoft/*
 // @match        https://outlook.office365.com/*
 // @match        https://outlook.live.com/*
 // @match        https://chatgpt.com/*
 // @grant        GM.xmlHttpRequest
+// @grant        GM_setClipboard
 // @grant        unsafeWindow
 // @connect      api.open-meteo.com
 // @run-at       document-idle
@@ -267,6 +269,52 @@ async function installWorkflowyRecycle() {
 
 if (location.hostname === 'workflowy.com') {
   installWorkflowyRecycle().catch(error => console.error('WorkFlowy Recycle failed', error));
+}
+
+function installTodoExporter() {
+  if (document.querySelector('[data-workflowy-todo-export]')) return;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = 'Copier pour WorkFlowy';
+  button.setAttribute('data-workflowy-todo-export', '');
+  Object.assign(button.style, {
+    position: 'fixed', top: '12px', right: '12px', zIndex: '2147483647',
+    padding: '6px 10px', font: "14px 'Segoe UI', sans-serif", color: '#000',
+    background: '#fff', border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer'
+  });
+  const status = document.createElement('span');
+  Object.assign(status.style, {
+    position: 'fixed', top: '48px', right: '12px', zIndex: '2147483647',
+    font: "12px 'Segoe UI', sans-serif", color: '#000', background: '#fff'
+  });
+  function taskNames() {
+    const candidates = [...document.querySelectorAll('[role="listitem"], [data-testid*="task"], li')];
+    const names = candidates.map(element => {
+      const title = element.querySelector('[contenteditable="true"], [data-testid*="title"], .taskItem-title');
+      return (title?.textContent || element.textContent || '').replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+    return [...new Set(names)];
+  }
+  button.addEventListener('click', () => {
+    const names = taskNames();
+    if (!names.length) {
+      status.textContent = 'Aucune tâche visible détectée';
+      return;
+    }
+    if (typeof GM_setClipboard !== 'function') {
+      status.textContent = 'Presse-papiers Tampermonkey indisponible';
+      return;
+    }
+    GM_setClipboard(names.join('\n'), 'text');
+    status.textContent = `${names.length} tâche${names.length === 1 ? '' : 's'} copiée${names.length === 1 ? '' : 's'}`;
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  });
+  document.body.appendChild(button);
+  document.body.appendChild(status);
+}
+
+if (location.hostname === 'to-do.live.com') {
+  installTodoExporter();
 }
 
 // ==UserScript==

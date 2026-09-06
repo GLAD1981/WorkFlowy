@@ -31,6 +31,13 @@ function loadInstaller(context) {
   return vm.runInNewContext(`${source.slice(start, end)}; installWorkflowyRecycle;`, context);
 }
 
+function loadTodoInstaller(context) {
+  const source = fs.readFileSync(path.join(__dirname, 'loader.user.js'), 'utf8');
+  const start = source.indexOf('function installTodoExporter()');
+  const end = source.indexOf("\nif (location.hostname === 'to-do.live.com')", start);
+  return vm.runInNewContext(`${source.slice(start, end)}; installTodoExporter;`, context);
+}
+
 test('routes a new simple history child without re-routing folders it creates', async () => {
   const document = createDocument();
   const intervals = [];
@@ -157,4 +164,27 @@ test('writes tomorrow Paris weather to the configured WorkFlowy note', async () 
   assert.match(requests[0], /longitude=2\.3522/);
   assert.match(requests[0], /timezone=Europe%2FParis/);
   assert.deepEqual(notes, [{ node: weatherNode, note: 'Météo Paris — 07/09/2026 : maximale 24 °C, minimale 14 °C, pluie 35 %' }]);
+});
+
+test('copies visible Microsoft To Do items as WorkFlowy lines', () => {
+  const elements = [];
+  const task = textContent => ({ textContent, querySelector: () => null });
+  const document = {
+    body: { appendChild: element => elements.push(element) },
+    querySelector: () => null,
+    querySelectorAll: () => [task('Lait'), task('Pain'), task('Lait')],
+    createElement: tagName => ({
+      tagName, style: {}, attributes: {}, children: [], textContent: '',
+      setAttribute(name, value) { this.attributes[name] = value; },
+      addEventListener(name, callback) { this.listeners = this.listeners || {}; this.listeners[name] = callback; },
+      appendChild(element) { this.children.push(element); }
+    })
+  };
+  let clipboard = '';
+  const context = { document, GM_setClipboard: (value, type) => { clipboard = `${type}:${value}`; }, setTimeout: () => {} };
+  const installer = loadTodoInstaller(context);
+  installer();
+  const button = elements.find(element => element.attributes['data-workflowy-todo-export'] !== undefined);
+  button.listeners.click();
+  assert.equal(clipboard, 'text:Lait\nPain');
 });

@@ -52,3 +52,13 @@
 - La note est actualisée au plus une fois par jour et le mécanisme reste
   capable de détecter un nœud météo apparu après le chargement.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (2 tests).
+
+## 2026-09-06 — export Microsoft To Do
+
+- Version du loader : `2.7.0`.
+- Sur `to-do.live.com`, un bouton `Copier pour WorkFlowy` extrait les tâches
+  visibles, déduplique les lignes et les place dans le presse-papiers sous
+  forme de lignes WorkFlowy.
+- Ce mode volontairement local ne dépend pas d'un jeton Todo ni d'une API
+  externe : après copie, il suffit de coller dans le nœud WorkFlowy voulu.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (3 tests).

@@ -27,3 +27,15 @@
   hiérarchie et l'édition du nœud. La mise à jour porte la version Tampermonkey
   à `2.4.1` afin de déclencher la
   mise à jour automatique.
+
+## 2026-09-06 — menu compact
+
+- Version du loader : `2.5.0`.
+- Le menu WorkFlowy est désormais vertical, placé en haut à droite, et ne
+  conserve que le bouton `Recycle` et son état temporaire.
+- Les boutons `Configurer` et `Action HA`, ainsi que leur panneau et leur
+  stockage Home Assistant, ont été supprimés. Les boutons n'ont plus de
+  liséré permanent.
+- `GM.xmlHttpRequest` est conservé pour l'étape météo suivante, avec accès
+  autorisé à `api.open-meteo.com`.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (1 test).

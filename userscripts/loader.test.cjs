@@ -128,6 +128,7 @@ test('searches focused items above both workflowy markers with singular OR words
   const document = createDocument();
   const intervals = [];
   const searches = [];
+  const zooms = [];
   let toggles = 0;
   const item = (id, name, children = []) => ({
     getId: () => id,
@@ -145,17 +146,20 @@ test('searches focused items above both workflowy markers with singular OR words
   };
   context.WF = {
     getItemById: id => id === parent.getId() ? parent : null,
-    currentItem: () => candidate,
+    currentItem: () => parent,
+    focusedItem: () => candidate,
     completedVisible: false,
     toggleCompletedVisible: () => { toggles += 1; },
-    search: (query, scope) => searches.push({ query, scope })
+    zoomTo: scope => zooms.push(scope),
+    search: query => searches.push(query)
   };
 
   const installer = loadInstaller(context);
   await installer();
   await intervals[0]();
 
-  assert.deepEqual(searches, [{ query: 'film OR rouge', scope: parent }]);
+  assert.deepEqual(zooms, [parent]);
+  assert.deepEqual(searches, ['film OR rouge']);
   assert.equal(toggles, 1);
   await intervals[0]();
   assert.equal(searches.length, 1);

@@ -92,6 +92,18 @@
   en boucle.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (6 tests).
 
+## 2026-09-06 — correction du focus et du périmètre de recherche
+
+- Version du loader : `3.2.0`.
+- WorkFlowy expose l'item réellement focalisé via `WF.focusedItem()`, tandis
+  que `WF.currentItem()` désigne le contexte courant. Le déclencheur utilise
+  désormais `focusedItem()` en priorité.
+- La recherche est limitée au parent demandé par `WF.zoomTo(parent)` puis
+  `WF.search(query)`, conformément à la signature native observée dans
+  `mylib.js`.
+- Validation locale : `node --test userscripts/loader.test.cjs` — PASS
+  (6 tests).
+
 ## 2026-09-06 — libellé météo relatif
 
 - Version du loader : `2.9.0`.

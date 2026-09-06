@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.2.0
+// @version      3.3.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -116,6 +116,12 @@ async function installWorkflowyRecycle() {
     return value;
   }
 
+  function resolveItemDestination(workflowy, item) {
+    const destination = item?.data?.toDestination?.();
+    if (!destination || destination.id === item?.getId?.()) return item;
+    return workflowy.getItemById?.(destination.id) || destination;
+  }
+
   function searchWords(name) {
     return [...new Set(String(name || '')
       .trim()
@@ -128,12 +134,13 @@ async function installWorkflowyRecycle() {
     const workflowy = api.workflowy;
     if (!workflowy?.getItemById || typeof workflowy.search !== 'function') return;
     const parent = workflowy.getItemById(focusedSearchParentId);
-    const focused = resolveNativeItem(workflowy, workflowy.focusedItem)
+    const focused = resolveItemDestination(workflowy, resolveNativeItem(workflowy, workflowy.focusedItem))
       || resolveNativeItem(workflowy, workflowy.currentItem);
     if (!parent || !focused) return;
     const children = parent.getChildren?.() || [];
-    const markerPositions = focusedSearchMarkerIds.map(id => children.findIndex(child => child.getId() === id));
-    const focusedPosition = children.findIndex(child => child.getId() === focused.getId?.());
+    const canonicalId = child => resolveItemDestination(workflowy, child)?.getId?.();
+    const markerPositions = focusedSearchMarkerIds.map(id => children.findIndex(child => canonicalId(child) === id));
+    const focusedPosition = children.findIndex(child => canonicalId(child) === focused.getId?.());
     if (markerPositions.some(position => position < 0) || focusedPosition < 0 || focusedPosition >= Math.min(...markerPositions)) {
       lastFocusedSearchKey = null;
       return;

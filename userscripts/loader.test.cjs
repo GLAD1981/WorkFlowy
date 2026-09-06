@@ -137,6 +137,12 @@ test('searches focused items above both workflowy markers with singular OR words
     isCompleted: () => false
   });
   const candidate = item('candidate', 'films rouges');
+  const virtualFocused = {
+    getId: () => 'virtual_candidate',
+    getName: () => 'films rouges',
+    getChildren: () => [],
+    data: { toDestination: () => candidate }
+  };
   const markerA = item('dcb74de21aaa', 'repère A');
   const markerB = item('0d1b418a6d43', 'repère B');
   const parent = item('655fd6cd4671', 'Recherche', [candidate, markerA, markerB]);
@@ -147,7 +153,7 @@ test('searches focused items above both workflowy markers with singular OR words
   context.WF = {
     getItemById: id => id === parent.getId() ? parent : null,
     currentItem: () => parent,
-    focusedItem: () => candidate,
+    focusedItem: () => virtualFocused,
     completedVisible: false,
     toggleCompletedVisible: () => { toggles += 1; },
     zoomTo: scope => zooms.push(scope),

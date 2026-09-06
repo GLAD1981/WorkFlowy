@@ -104,6 +104,15 @@
 - Validation locale : `node --test userscripts/loader.test.cjs` — PASS
   (6 tests).
 
+## 2026-09-06 — support des nœuds virtuels focalisés
+
+- Version du loader : `3.3.0`.
+- Les nœuds focalisés et les repères affichés dans une vue WorkFlowy peuvent
+  avoir un identifiant `virtual_…`. Le déclencheur résout désormais
+  `data.toDestination()` avant de comparer les positions et les repères.
+- Validation locale : `node --test userscripts/loader.test.cjs` — PASS
+  (6 tests), avec un focus virtuel.
+
 ## 2026-09-06 — libellé météo relatif
 
 - Version du loader : `2.9.0`.

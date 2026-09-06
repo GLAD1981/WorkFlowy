@@ -314,5 +314,7 @@ test('keeps the Outlook BHVP enhancements in the embedded loader', () => {
   assert.match(source, /Raccourcis Outlook/);
   assert.match(source, /makeActionButton\('Synthèse', 'synthesis'/);
   assert.match(source, /reflectionLevel/);
+  assert.doesNotMatch(source, /Observer mes réponses/);
+  assert.ok(source.indexOf("extraSection, reflectionSection, buttonSection") >= 0);
   assert.doesNotMatch(source, /Courrier actualisé et figé/);
 });

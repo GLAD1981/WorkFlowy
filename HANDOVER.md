@@ -168,3 +168,14 @@
   date numérique : elle utilise `demain <jour>` ou `aujourd'hui <jour>` selon
   la date Europe/Paris.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (4 tests).
+
+## 2026-09-06 — placement du niveau de réflexion Outlook
+
+- Version du loader : `3.8.0` ; BHVP intégré : `1.3.4`.
+- Le sélecteur `Niveau de réflexion demandé` est maintenant placé juste sous
+  le champ `Instruction à transmettre (facultative)`.
+- Le bouton `Observer mes réponses` a été supprimé du volet.
+- Les réglages existants et leur mémorisation restent inchangés.
+- Validation : `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (7 tests) ;
+  `git diff --check` — PASS.

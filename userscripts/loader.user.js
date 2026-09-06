@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.7.0
+// @version      3.8.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -1311,6 +1311,28 @@ ${mail.body}`);
     extra.placeholder = 'Ex. : répondre en deux phrases ; observer seulement ma dernière réponse…';
     extraSection.append(extraLabel, extra);
 
+    const reflectionSection = document.createElement('div');
+    reflectionSection.className = 'section';
+    const reflectionLabel = document.createElement('label');
+    reflectionLabel.htmlFor = 'reflectionLevel';
+    reflectionLabel.textContent = 'Niveau de réflexion demandé';
+    const reflectionLevel = document.createElement('select');
+    reflectionLevel.id = 'reflectionLevel';
+    [
+      ['quick', 'Rapide'],
+      ['standard', 'Standard'],
+      ['deep', 'Approfondi']
+    ].forEach(([value, text]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      reflectionLevel.appendChild(option);
+    });
+    const reflectionHelp = document.createElement('div');
+    reflectionHelp.className = 'privacy';
+    reflectionHelp.textContent = 'Ce réglage formule le niveau demandé dans le prompt ; il ne force pas un paramètre interne de ChatGPT.';
+    reflectionSection.append(reflectionLabel, reflectionLevel, reflectionHelp);
+
     const buttonSection = document.createElement('div');
     buttonSection.className = 'section buttons';
     const makeActionButton = (text, action, secondary = false) => {
@@ -1325,8 +1347,7 @@ ${mail.body}`);
       makeActionButton('Préparer une réponse', 'reply'),
       makeActionButton('Envoyer sans consigne', 'raw', true),
       makeActionButton('Résumer', 'summary', true),
-      makeActionButton('Synthèse', 'synthesis', true),
-      makeActionButton('Observer mes réponses', 'learn', true)
+      makeActionButton('Synthèse', 'synthesis', true)
     );
 
     const responseSection = document.createElement('div');
@@ -1378,25 +1399,6 @@ ${mail.body}`);
     const autoSendCheck = makeCheck('autoSend', 'Envoyer automatiquement dans ChatGPT');
     const reserveSpaceCheck = makeCheck('reserveSpace', 'Réserver la place dans Outlook (évite de masquer le courrier)');
 
-    const reflectionLabel = document.createElement('label');
-    reflectionLabel.htmlFor = 'reflectionLevel';
-    reflectionLabel.textContent = 'Niveau de réflexion demandé';
-    const reflectionLevel = document.createElement('select');
-    reflectionLevel.id = 'reflectionLevel';
-    [
-      ['quick', 'Rapide'],
-      ['standard', 'Standard'],
-      ['deep', 'Approfondi']
-    ].forEach(([value, text]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = text;
-      reflectionLevel.appendChild(option);
-    });
-    const reflectionHelp = document.createElement('div');
-    reflectionHelp.className = 'privacy';
-    reflectionHelp.textContent = 'Ce réglage formule le niveau demandé dans le prompt ; il ne force pas un paramètre interne de ChatGPT.';
-
     const rangeRow = document.createElement('div');
     rangeRow.className = 'range-row';
     const widthRange = document.createElement('input');
@@ -1417,14 +1419,11 @@ ${mail.body}`);
       popupWindowCheck.label,
       autoSendCheck.label,
       reserveSpaceCheck.label,
-      reflectionLabel,
-      reflectionLevel,
-      reflectionHelp,
       rangeRow,
       privacy
     );
 
-    main.append(profileSection, mailSection, shortcutSection, extraSection, buttonSection, responseSection, optionsSection);
+    main.append(profileSection, mailSection, shortcutSection, extraSection, reflectionSection, buttonSection, responseSection, optionsSection);
 
     const status = document.createElement('div');
     status.id = 'status';

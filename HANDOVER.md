@@ -127,6 +127,19 @@
 - Validation : `node --check userscripts/loader.user.js` — PASS ;
   `node --test userscripts/loader.test.cjs` — PASS (6 tests).
 
+## 2026-09-06 — améliorations du volet Outlook
+
+- Version du loader : `3.7.0` ; BHVP intégré : `1.3.4`.
+- Le volet affiche le pense-bête `E — Archiver` et `B — Mettre en attente`.
+- Le bouton `Synthèse` demande les actions, réponses attendues, échéances,
+  décisions et points à clarifier.
+- Le sélecteur `Niveau de réflexion` (`Rapide`, `Standard`, `Approfondi`)
+  est mémorisé et ajouté au prompt. Il formule une consigne, sans prétendre
+  modifier un paramètre interne du modèle ChatGPT.
+- Le statut inférieur `Courrier actualisé et figé … caractères` a été retiré.
+- Validation : `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (7 tests).
+
 ## 2026-09-06 — support des nœuds virtuels focalisés
 
 - Version du loader : `3.3.0`.

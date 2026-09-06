@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.6.0
+// @version      3.7.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*

@@ -143,15 +143,19 @@ test('searches focused items above both workflowy markers with singular OR words
     getChildren: () => [],
     data: { toDestination: () => candidate }
   };
-  const markerA = item('dcb74de21aaa', 'repère A');
-  const markerB = item('0d1b418a6d43', 'repère B');
-  const parent = item('655fd6cd4671', 'Recherche', [candidate, markerA, markerB]);
+  const markerA = item('full-marker-a', 'repère A');
+  const markerB = item('full-marker-b', 'repère B');
+  const parent = item('full-parent', 'Recherche', [candidate, markerA, markerB]);
   const context = {
     document, unsafeWindow: {},
     GM: {}, setTimeout: () => {}, setInterval: callback => intervals.push(callback), Intl, Date, console
   };
   context.WF = {
-    getItemById: id => id === parent.getId() ? parent : null,
+    getItemById: id => ({
+      '655fd6cd4671': parent,
+      dcb74de21aaa: markerA,
+      '0d1b418a6d43': markerB
+    })[id] || null,
     currentItem: () => parent,
     focusedItem: () => virtualFocused,
     completedVisible: false,
@@ -165,7 +169,7 @@ test('searches focused items above both workflowy markers with singular OR words
   await intervals[0]();
 
   assert.deepEqual(zooms, [parent]);
-  assert.deepEqual(searches, ['film OR rouge']);
+  assert.deepEqual(searches, ['"film" OR "rouge"']);
   assert.equal(toggles, 1);
   await intervals[0]();
   assert.equal(searches.length, 1);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.3.0
+// @version      3.4.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -124,6 +124,7 @@ async function installWorkflowyRecycle() {
 
   function searchWords(name) {
     return [...new Set(String(name || '')
+      .replace(/<[^>]*>/g, ' ')
       .trim()
       .split(/\s+/)
       .map(word => word.replace(/[.,;:!?()[\]{}"']/g, '').replace(/s$/i, ''))
@@ -139,7 +140,10 @@ async function installWorkflowyRecycle() {
     if (!parent || !focused) return;
     const children = parent.getChildren?.() || [];
     const canonicalId = child => resolveItemDestination(workflowy, child)?.getId?.();
-    const markerPositions = focusedSearchMarkerIds.map(id => children.findIndex(child => canonicalId(child) === id));
+    const markerNodes = focusedSearchMarkerIds
+      .map(id => resolveItemDestination(workflowy, workflowy.getItemById(id)))
+      .filter(Boolean);
+    const markerPositions = markerNodes.map(marker => children.findIndex(child => canonicalId(child) === marker.getId?.()));
     const focusedPosition = children.findIndex(child => canonicalId(child) === focused.getId?.());
     if (markerPositions.some(position => position < 0) || focusedPosition < 0 || focusedPosition >= Math.min(...markerPositions)) {
       lastFocusedSearchKey = null;
@@ -147,7 +151,8 @@ async function installWorkflowyRecycle() {
     }
     const words = searchWords(focused.getName?.());
     if (!words.length) return;
-    const searchKey = `${focused.getId?.()}\u0000${words.join(' OR ')}`;
+    const query = words.map(word => `"${word}"`).join(' OR ');
+    const searchKey = `${focused.getId?.()}\u0000${query}`;
     if (lastFocusedSearchKey === searchKey) return;
     const completedVisible = typeof workflowy.completedVisible === 'function'
       ? workflowy.completedVisible()
@@ -156,7 +161,7 @@ async function installWorkflowyRecycle() {
       workflowy.toggleCompletedVisible();
     }
     if (typeof workflowy.zoomTo === 'function') workflowy.zoomTo(parent);
-    workflowy.search(words.join(' OR '));
+    workflowy.search(query);
     lastFocusedSearchKey = searchKey;
   }
 

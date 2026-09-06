@@ -113,6 +113,18 @@
 - Validation locale : `node --test userscripts/loader.test.cjs` — PASS
   (6 tests), avec un focus virtuel.
 
+## 2026-09-06 — résolution des identifiants courts et requête OR
+
+- Version du loader : `3.4.0`.
+- Les IDs des URL WorkFlowy sont résolus par `WF.getItemById()` avant de
+  comparer les repères : l'API native peut retourner des UUID internes
+  différents (`986…`, `be47…`, etc.).
+- Le texte focalisé est nettoyé des balises HTML, les `s` finaux sont retirés,
+  puis la requête suit le format natif observé dans `mylib.js` :
+  `"mot1" OR "mot2"`.
+- Validation locale : `node --test userscripts/loader.test.cjs` — PASS
+  (6 tests).
+
 ## 2026-09-06 — libellé météo relatif
 
 - Version du loader : `2.9.0`.

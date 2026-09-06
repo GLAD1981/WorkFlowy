@@ -88,6 +88,13 @@ test('routes a new simple history child without re-routing folders it creates', 
 
   const installer = loadInstaller(context);
   await installer();
+  const menu = document.body.children.find(element => element.attributes['data-workflowy-recycle-menu'] !== undefined);
+  assert.ok(menu);
+  assert.equal(menu.style.flexDirection, 'column');
+  assert.equal(menu.style.border, '0');
+  const buttons = menu.children.flatMap(section => section.children).filter(element => element.tagName === 'button');
+  assert.deepEqual(buttons.map(button => button.textContent), ['Recycle']);
+  assert.equal(buttons[0].style.border, '0');
   assert.equal(intervals.length, 1, 'the router must poll the native WorkFlowy tree');
 
   await intervals[0]();

@@ -114,6 +114,19 @@
 - Validation locale : `node --test userscripts/loader.test.cjs` — PASS
   (6 tests), avec suppression puis traitement du suivant.
 
+## 2026-09-06 — BHVP Outlook intégré en 1.3.3
+
+- Version du loader : `3.6.0`.
+- La copie BHVP embarquée a été alignée sur la dernière version publiée
+  `1.3.3` (`fc08814`) du dépôt `GLAD1981/Tampermonkey`.
+- La surcouche 1.3.3 est intégrée directement dans le loader afin que ses
+  corrections Outlook soient actives même si Tampermonkey ne traite pas le
+  second en-tête userscript comme un script indépendant.
+- Toute future modification demandée pour le plugin Outlook doit être faite
+  directement dans la copie BHVP du loader, puis versionnée et testée ici.
+- Validation : `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (6 tests).
+
 ## 2026-09-06 — support des nœuds virtuels focalisés
 
 - Version du loader : `3.3.0`.

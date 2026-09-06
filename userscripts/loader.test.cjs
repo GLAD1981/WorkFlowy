@@ -14,7 +14,7 @@ function createDocument() {
         tagName, children: [], style: {}, attributes: {}, textContent: '', value: '', disabled: false,
         appendChild(element) { this.children.push(element); },
         setAttribute(name, value) { this.attributes[name] = value; },
-        addEventListener() {}
+        addEventListener(name, callback) { this.listeners = this.listeners || {}; this.listeners[name] = callback; }
       };
     },
     querySelector(selector) {
@@ -187,4 +187,37 @@ test('copies visible Microsoft To Do items as WorkFlowy lines', () => {
   const button = elements.find(element => element.attributes['data-workflowy-todo-export'] !== undefined);
   button.listeners.click();
   assert.equal(clipboard, 'text:Lait\nPain');
+});
+
+test('recycles in app mode when the native root is an object', async () => {
+  const document = createDocument();
+  const intervals = [];
+  const completed = [];
+  const leaf = {
+    getId: () => 'done-item',
+    getName: () => 'À recycler #d',
+    getChildren: () => [],
+    isCompleted: () => true,
+    data: { id: 'done-item' }
+  };
+  const root = {
+    getId: () => 'root', getName: () => 'Root', getChildren: () => [leaf],
+    isCompleted: () => false, data: { id: 'root' }
+  };
+  const context = {
+    document, unsafeWindow: {},
+    GM: {}, setTimeout: () => {}, setInterval: callback => intervals.push(callback), Intl, Date, console
+  };
+  context.WF = {
+    rootItem: root,
+    getItemById: () => null,
+    completeItem: item => completed.push(item)
+  };
+
+  const installer = loadInstaller(context);
+  await installer();
+  const menu = document.body.children.find(element => element.attributes['data-workflowy-recycle-menu'] !== undefined);
+  const recycle = menu.children.flatMap(section => section.children).find(element => element.textContent === 'Recycle');
+  await recycle.listeners.click();
+  assert.deepEqual(completed, [leaf]);
 });

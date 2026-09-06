@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.7.0
+// @version      2.8.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -249,10 +249,16 @@ async function installWorkflowyRecycle() {
     recycle.disabled = true;
     status.textContent = 'Recyclage…';
     try {
-      const items = recyclableItems(api.workflowy.rootItem());
-      api.workflowy.editGroup(() => items.forEach(item => api.workflowy.completeItem(item)));
+      const nativeRoot = api.workflowy.rootItem;
+      const root = typeof nativeRoot === 'function' ? nativeRoot() : nativeRoot;
+      if (!root || typeof api.workflowy.completeItem !== 'function') {
+        throw new Error('API native de recyclage indisponible');
+      }
+      const items = recyclableItems(root);
+      const complete = () => items.forEach(item => api.workflowy.completeItem(item));
+      if (typeof api.workflowy.editGroup === 'function') api.workflowy.editGroup(complete);
+      else complete();
       const message = `${items.length} nœud${items.length === 1 ? '' : 's'} recyclé${items.length === 1 ? '' : 's'}`;
-      api.workflowy.showMessage(message);
       status.textContent = message;
       setTimeout(() => {
         if (status.textContent === message) status.textContent = '';

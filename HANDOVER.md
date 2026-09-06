@@ -62,3 +62,12 @@
 - Ce mode volontairement local ne dépend pas d'un jeton Todo ni d'une API
   externe : après copie, il suffit de coller dans le nœud WorkFlowy voulu.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (3 tests).
+
+## 2026-09-06 — recycle mode app et message temporaire
+
+- Version du loader : `2.8.0`.
+- Recycle accepte désormais `WF.rootItem` sous forme de fonction ou d'objet,
+  et fonctionne sans `WF.editGroup` en appelant directement `completeItem`.
+- Le message global WorkFlowy, qui restait affiché, a été supprimé : le
+  compteur est affiché uniquement dans le menu pendant quatre secondes.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (4 tests).

@@ -137,6 +137,7 @@ test('searches focused items above both workflowy markers with singular OR words
     isCompleted: () => false
   });
   const candidate = item('candidate', 'films rouges');
+  const nextCandidate = item('next-candidate', 'pommes vertes');
   const virtualFocused = {
     getId: () => 'virtual_candidate',
     getName: () => 'films rouges',
@@ -145,7 +146,8 @@ test('searches focused items above both workflowy markers with singular OR words
   };
   const markerA = item('full-marker-a', 'repère A');
   const markerB = item('full-marker-b', 'repère B');
-  const parent = item('full-parent', 'Recherche', [candidate, markerA, markerB]);
+  const parentChildren = [candidate, nextCandidate, markerA, markerB];
+  const parent = item('full-parent', 'Recherche', parentChildren);
   const context = {
     document, unsafeWindow: {},
     GM: {}, setTimeout: () => {}, setInterval: callback => intervals.push(callback), Intl, Date, console
@@ -174,6 +176,10 @@ test('searches focused items above both workflowy markers with singular OR words
   await intervals[0]();
   assert.equal(searches.length, 1);
   assert.equal(toggles, 1);
+  parentChildren.splice(0, 1);
+  await intervals[0]();
+  assert.deepEqual(zooms, [parent, parent]);
+  assert.deepEqual(searches, ['"film" OR "rouge"', '"pomme" OR "verte"']);
 });
 
 test('writes tomorrow Paris weather to the configured WorkFlowy note', async () => {

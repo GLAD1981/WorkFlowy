@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.4.0
+// @version      3.5.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -95,6 +95,8 @@ async function installWorkflowyRecycle() {
   let weatherReconciliation = null;
   let weatherLastRefreshDay = null;
   let lastFocusedSearchKey = null;
+  let lastFocusedSearchItemId = null;
+  let lastFocusedSearchIndex = -1;
 
   function findChild(parent, name) {
     return parent.getChildren().find(child => child.getName().trim() === name);
@@ -145,14 +147,25 @@ async function installWorkflowyRecycle() {
       .filter(Boolean);
     const markerPositions = markerNodes.map(marker => children.findIndex(child => canonicalId(child) === marker.getId?.()));
     const focusedPosition = children.findIndex(child => canonicalId(child) === focused.getId?.());
-    if (markerPositions.some(position => position < 0) || focusedPosition < 0 || focusedPosition >= Math.min(...markerPositions)) {
-      lastFocusedSearchKey = null;
+    if (markerPositions.some(position => position < 0)) {
       return;
     }
-    const words = searchWords(focused.getName?.());
+    const limit = Math.min(...markerPositions);
+    let target = focusedPosition >= 0 && focusedPosition < limit ? focused : null;
+    let targetPosition = focusedPosition;
+    const lastItemStillExists = children.some(child => canonicalId(child) === lastFocusedSearchItemId);
+    if (!target && lastFocusedSearchItemId && !lastItemStillExists && lastFocusedSearchIndex >= 0) {
+      const nextChild = children[lastFocusedSearchIndex];
+      if (nextChild && lastFocusedSearchIndex < limit) {
+        target = resolveItemDestination(workflowy, nextChild);
+        targetPosition = lastFocusedSearchIndex;
+      }
+    }
+    if (!target) return;
+    const words = searchWords(target.getName?.());
     if (!words.length) return;
     const query = words.map(word => `"${word}"`).join(' OR ');
-    const searchKey = `${focused.getId?.()}\u0000${query}`;
+    const searchKey = `${target.getId?.()}\u0000${query}`;
     if (lastFocusedSearchKey === searchKey) return;
     const completedVisible = typeof workflowy.completedVisible === 'function'
       ? workflowy.completedVisible()
@@ -163,6 +176,8 @@ async function installWorkflowyRecycle() {
     if (typeof workflowy.zoomTo === 'function') workflowy.zoomTo(parent);
     workflowy.search(query);
     lastFocusedSearchKey = searchKey;
+    lastFocusedSearchItemId = target.getId?.();
+    lastFocusedSearchIndex = targetPosition;
   }
 
   function parisFolderNames() {

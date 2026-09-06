@@ -104,6 +104,16 @@
 - Validation locale : `node --test userscripts/loader.test.cjs` — PASS
   (6 tests).
 
+## 2026-09-06 — passage automatique au suivant après suppression
+
+- Version du loader : `3.5.0`.
+- Le dernier item traité et sa position sont mémorisés. Lorsqu'il disparaît,
+  l'enfant admissible suivant, avant les deux repères, est recherché
+  automatiquement sans nécessiter son focus.
+- Les autres items ne déclenchent toujours aucune recherche spontanée.
+- Validation locale : `node --test userscripts/loader.test.cjs` — PASS
+  (6 tests), avec suppression puis traitement du suivant.
+
 ## 2026-09-06 — support des nœuds virtuels focalisés
 
 - Version du loader : `3.3.0`.

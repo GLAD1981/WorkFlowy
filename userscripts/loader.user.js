@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.8.0
+// @version      2.9.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -176,9 +176,29 @@ async function installWorkflowyRecycle() {
     }));
   }
 
-  function formatWeatherDate(isoDate) {
-    const [year, month, day] = String(isoDate).split('-');
-    return `${day}/${month}/${year}`;
+  function parisDateKey(date) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
+  }
+
+  function addDateKeyDays(dateKey, days) {
+    const date = new Date(`${dateKey}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function relativeWeatherDayLabel(isoDate, now = new Date()) {
+    const today = parisDateKey(now);
+    const tomorrow = addDateKeyDays(today, 1);
+    const weekday = new Intl.DateTimeFormat('fr-FR', {
+      timeZone: 'Europe/Paris', weekday: 'long'
+    }).format(new Date(`${isoDate}T12:00:00Z`));
+    if (isoDate === today) return `aujourd'hui ${weekday}`;
+    if (isoDate === tomorrow) return `demain ${weekday}`;
+    return weekday;
   }
 
   async function reconcileWeather() {
@@ -204,7 +224,7 @@ async function installWorkflowyRecycle() {
       const forecast = await requestWeather(`https://api.open-meteo.com/v1/forecast?${query}`);
       const daily = forecast?.daily;
       if (!daily?.time?.[1]) return;
-      const note = `Météo Paris — ${formatWeatherDate(daily.time[1])} : maximale ${daily.temperature_2m_max?.[1]} °C, minimale ${daily.temperature_2m_min?.[1]} °C, pluie ${daily.precipitation_probability_max?.[1]} %`;
+      const note = `${relativeWeatherDayLabel(daily.time[1])} : maximale ${daily.temperature_2m_max?.[1]} °C, minimale ${daily.temperature_2m_min?.[1]} °C, pluie ${daily.precipitation_probability_max?.[1]} %`;
       workflowy.setItemNote(weatherNode, note);
     })()
       .catch(error => {

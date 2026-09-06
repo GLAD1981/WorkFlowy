@@ -71,3 +71,11 @@
 - Le message global WorkFlowy, qui restait affiché, a été supprimé : le
   compteur est affiché uniquement dans le menu pendant quatre secondes.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (4 tests).
+
+## 2026-09-06 — libellé météo relatif
+
+- Version du loader : `2.9.0`.
+- La note météo ne commence plus par `Météo Paris —` et n'affiche plus la
+  date numérique : elle utilise `demain <jour>` ou `aujourd'hui <jour>` selon
+  la date Europe/Paris.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (4 tests).

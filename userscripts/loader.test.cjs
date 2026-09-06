@@ -146,7 +146,9 @@ test('writes tomorrow Paris weather to the configured WorkFlowy note', async () 
     },
     setTimeout: () => {},
     setInterval: callback => { intervals.push(callback); },
-    Date,
+    Date: class FixedDate extends Date {
+      constructor(...args) { super(...(args.length ? args : ['2026-09-06T12:00:00Z'])); }
+    },
     Intl,
     console
   };
@@ -163,7 +165,7 @@ test('writes tomorrow Paris weather to the configured WorkFlowy note', async () 
   assert.match(requests[0], /latitude=48\.8566/);
   assert.match(requests[0], /longitude=2\.3522/);
   assert.match(requests[0], /timezone=Europe%2FParis/);
-  assert.deepEqual(notes, [{ node: weatherNode, note: 'Météo Paris — 07/09/2026 : maximale 24 °C, minimale 14 °C, pluie 35 %' }]);
+  assert.deepEqual(notes, [{ node: weatherNode, note: 'demain lundi : maximale 24 °C, minimale 14 °C, pluie 35 %' }]);
 });
 
 test('copies visible Microsoft To Do items as WorkFlowy lines', () => {

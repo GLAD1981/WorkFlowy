@@ -124,6 +124,44 @@ test('routes a new simple history child without re-routing folders it creates', 
   assert.equal(moves.length, 1);
 });
 
+test('searches focused items above both workflowy markers with singular OR words', async () => {
+  const document = createDocument();
+  const intervals = [];
+  const searches = [];
+  let toggles = 0;
+  const item = (id, name, children = []) => ({
+    getId: () => id,
+    getName: () => name,
+    getChildren: () => children,
+    isCompleted: () => false
+  });
+  const candidate = item('candidate', 'films rouges');
+  const markerA = item('dcb74de21aaa', 'repère A');
+  const markerB = item('0d1b418a6d43', 'repère B');
+  const parent = item('655fd6cd4671', 'Recherche', [candidate, markerA, markerB]);
+  const context = {
+    document, unsafeWindow: {},
+    GM: {}, setTimeout: () => {}, setInterval: callback => intervals.push(callback), Intl, Date, console
+  };
+  context.WF = {
+    getItemById: id => id === parent.getId() ? parent : null,
+    currentItem: () => candidate,
+    completedVisible: false,
+    toggleCompletedVisible: () => { toggles += 1; },
+    search: (query, scope) => searches.push({ query, scope })
+  };
+
+  const installer = loadInstaller(context);
+  await installer();
+  await intervals[0]();
+
+  assert.deepEqual(searches, [{ query: 'film OR rouge', scope: parent }]);
+  assert.equal(toggles, 1);
+  await intervals[0]();
+  assert.equal(searches.length, 1);
+  assert.equal(toggles, 1);
+});
+
 test('writes tomorrow Paris weather to the configured WorkFlowy note', async () => {
   const document = createDocument();
   const intervals = [];

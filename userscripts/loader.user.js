@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.0.0
+// @version      3.1.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -83,6 +83,8 @@ async function installWorkflowyRecycle() {
   document.body.appendChild(menu);
 
   const historyId = 'cb6bcd3bf1ba';
+  const focusedSearchParentId = '655fd6cd4671';
+  const focusedSearchMarkerIds = ['dcb74de21aaa', '0d1b418a6d43'];
   const weatherNodeId = '5989c44498ec';
   const parisLatitude = '48.8566';
   const parisLongitude = '2.3522';
@@ -92,6 +94,7 @@ async function installWorkflowyRecycle() {
   let historyReconciliation = null;
   let weatherReconciliation = null;
   let weatherLastRefreshDay = null;
+  let lastFocusedSearchKey = null;
 
   function findChild(parent, name) {
     return parent.getChildren().find(child => child.getName().trim() === name);
@@ -105,6 +108,48 @@ async function installWorkflowyRecycle() {
 
   function findOrCreateChild(parent, name) {
     return findChild(parent, name) || createChild(parent, name);
+  }
+
+  function resolveNativeItem(workflowy, value) {
+    if (typeof value === 'function') value = value();
+    if (typeof value === 'string') return workflowy.getItemById?.(value);
+    return value;
+  }
+
+  function searchWords(name) {
+    return [...new Set(String(name || '')
+      .trim()
+      .split(/\s+/)
+      .map(word => word.replace(/[.,;:!?()[\]{}"']/g, '').replace(/s$/i, ''))
+      .filter(Boolean))];
+  }
+
+  function reconcileFocusedSearch() {
+    const workflowy = api.workflowy;
+    if (!workflowy?.getItemById || typeof workflowy.search !== 'function') return;
+    const parent = workflowy.getItemById(focusedSearchParentId);
+    const focused = resolveNativeItem(workflowy, workflowy.currentItem)
+      || resolveNativeItem(workflowy, workflowy.focusedItem);
+    if (!parent || !focused) return;
+    const children = parent.getChildren?.() || [];
+    const markerPositions = focusedSearchMarkerIds.map(id => children.findIndex(child => child.getId() === id));
+    const focusedPosition = children.findIndex(child => child.getId() === focused.getId?.());
+    if (markerPositions.some(position => position < 0) || focusedPosition < 0 || focusedPosition >= Math.min(...markerPositions)) {
+      lastFocusedSearchKey = null;
+      return;
+    }
+    const words = searchWords(focused.getName?.());
+    if (!words.length) return;
+    const searchKey = `${focused.getId?.()}\u0000${words.join(' OR ')}`;
+    if (lastFocusedSearchKey === searchKey) return;
+    const completedVisible = typeof workflowy.completedVisible === 'function'
+      ? workflowy.completedVisible()
+      : workflowy.completedVisible;
+    if (completedVisible === false && typeof workflowy.toggleCompletedVisible === 'function') {
+      workflowy.toggleCompletedVisible();
+    }
+    workflowy.search(words.join(' OR '), parent);
+    lastFocusedSearchKey = searchKey;
   }
 
   function parisFolderNames() {
@@ -251,15 +296,18 @@ async function installWorkflowyRecycle() {
   function startHistoryRouting() {
     scheduleHistoryReconciliation();
     reconcileWeather();
+    reconcileFocusedSearch();
     setInterval(() => {
       const historyPromise = scheduleHistoryReconciliation();
       reconcileWeather();
+      reconcileFocusedSearch();
       return historyPromise;
     }, 500);
     if (typeof MutationObserver !== 'function') return;
     const observer = new MutationObserver(() => {
       scheduleHistoryReconciliation();
       reconcileWeather();
+      reconcileFocusedSearch();
     });
     observer.observe(document.body, { childList: true, characterData: true, subtree: true });
   }

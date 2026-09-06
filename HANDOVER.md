@@ -80,6 +80,18 @@
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (5 tests),
   avec scénarios de journée et de soirée.
 
+## 2026-09-06 — recherche des items focalisés
+
+- Version du loader : `3.1.0`.
+- Le loader surveille les enfants directs de `655fd6cd4671`. Si l'item
+  focalisé se trouve au-dessus des deux repères `dcb74de21aaa` et
+  `0d1b418a6d43`, ses mots sont recherchés dans ce parent avec `OR`.
+- Chaque mot est dédupliqué, nettoyé et privé de son `s` terminal. Si les
+  éléments masqués sont désactivés, `toggleCompletedVisible()` est appelé
+  avant la recherche. Le même item et la même requête ne sont pas relancés
+  en boucle.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (6 tests).
+
 ## 2026-09-06 — libellé météo relatif
 
 - Version du loader : `2.9.0`.

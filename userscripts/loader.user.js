@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      2.9.0
+// @version      3.0.0
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -223,8 +223,13 @@ async function installWorkflowyRecycle() {
       ].join('&');
       const forecast = await requestWeather(`https://api.open-meteo.com/v1/forecast?${query}`);
       const daily = forecast?.daily;
-      if (!daily?.time?.[1]) return;
-      const note = `${relativeWeatherDayLabel(daily.time[1])} : maximale ${daily.temperature_2m_max?.[1]} °C, minimale ${daily.temperature_2m_min?.[1]} °C, pluie ${daily.precipitation_probability_max?.[1]} %`;
+      if (!daily?.time?.[0] || !daily?.time?.[1]) return;
+      const parisHour = Number(new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Paris', hour: '2-digit', hourCycle: 'h23'
+      }).format(new Date()));
+      const targetIndex = parisHour >= 5 && parisHour < 19 ? 0 : 1;
+      const targetDate = daily.time[targetIndex];
+      const note = `${relativeWeatherDayLabel(targetDate)} : maximale ${daily.temperature_2m_max?.[targetIndex]} °C, minimale ${daily.temperature_2m_min?.[targetIndex]} °C, pluie ${daily.precipitation_probability_max?.[targetIndex]} %`;
       workflowy.setItemNote(weatherNode, note);
     })()
       .catch(error => {

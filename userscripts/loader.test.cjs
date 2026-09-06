@@ -165,6 +165,32 @@ test('writes tomorrow Paris weather to the configured WorkFlowy note', async () 
   assert.match(requests[0], /latitude=48\.8566/);
   assert.match(requests[0], /longitude=2\.3522/);
   assert.match(requests[0], /timezone=Europe%2FParis/);
+  assert.deepEqual(notes, [{ node: weatherNode, note: "aujourd'hui dimanche : maximale 21 °C, minimale 12 °C, pluie 10 %" }]);
+});
+
+test('uses tomorrow weather outside the Paris daytime window', async () => {
+  const document = createDocument();
+  const intervals = [];
+  const notes = [];
+  const weatherNode = { getId: () => '5989c44498ec', getName: () => 'je regarde la météo', getChildren: () => [] };
+  const context = {
+    document, unsafeWindow: {},
+    GM: { xmlHttpRequest: options => options.onload({ status: 200, responseText: JSON.stringify({ daily: {
+      time: ['2026-09-06', '2026-09-07'], temperature_2m_max: [21, 24],
+      temperature_2m_min: [12, 14], precipitation_probability_max: [10, 35]
+    } }) }) },
+    setTimeout: () => {}, setInterval: callback => intervals.push(callback),
+    Date: class FixedDate extends Date {
+      constructor(...args) { super(...(args.length ? args : ['2026-09-06T20:00:00Z'])); }
+    }, Intl, console
+  };
+  context.WF = {
+    getItemById: id => id === weatherNode.getId() ? weatherNode : null,
+    setItemNote: (node, note) => notes.push({ node, note })
+  };
+  const installer = loadInstaller(context);
+  await installer();
+  await intervals[0]();
   assert.deepEqual(notes, [{ node: weatherNode, note: 'demain lundi : maximale 24 °C, minimale 14 °C, pluie 35 %' }]);
 });
 

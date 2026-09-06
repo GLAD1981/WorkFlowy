@@ -72,6 +72,14 @@
   compteur est affiché uniquement dans le menu pendant quatre secondes.
 - Validation : `node --test userscripts/loader.test.cjs` — PASS (4 tests).
 
+## 2026-09-06 — plage horaire météo
+
+- Version du loader : `3.0.0`.
+- De `05:00` inclus à `19:00` exclus, heure Europe/Paris, la note prend la
+  météo du jour. Le reste du temps, elle prend celle du lendemain.
+- Validation : `node --test userscripts/loader.test.cjs` — PASS (5 tests),
+  avec scénarios de journée et de soirée.
+
 ## 2026-09-06 — libellé météo relatif
 
 - Version du loader : `2.9.0`.

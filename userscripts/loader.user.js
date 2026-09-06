@@ -427,7 +427,7 @@ if (location.hostname === 'to-do.live.com') {
 // ==UserScript==
 // @name         BHVP – Volet Outlook vers ChatGPT
 // @namespace    bhvp-outlook-chatgpt
-// @version      1.3.3
+// @version      1.3.4
 // @description  Envoie le courrier visible vers ChatGPT, récupère automatiquement sa réponse et peut l’insérer dans un brouillon Outlook.
 // @homepageURL  https://github.com/GLAD1981/Tampermonkey
 // @updateURL    https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
@@ -449,7 +449,7 @@ if (location.hostname === 'to-do.live.com') {
 (() => {
   'use strict';
 
-  const VERSION = '1.3.3';
+  const VERSION = '1.3.4';
   const STORAGE_PENDING = 'bhvp_pending_mail_v2';
   const STORAGE_SETTINGS = 'bhvp_panel_settings_v2';
   const STORAGE_ACTIVE_REQUEST = 'bhvp_active_request_v1';
@@ -463,6 +463,7 @@ if (location.hostname === 'to-do.live.com') {
     collapsed: false,
     includeThread: true,
     autoSend: false,
+    reflectionLevel: 'standard',
     popupWindow: true,
     reserveSpace: true,
     width: 350
@@ -701,6 +702,8 @@ if (location.hostname === 'to-do.live.com') {
         return 'Rédige une réponse au courriel ci-dessous.';
       case 'summary':
         return 'Résume le courriel ou le fil ci-dessous.';
+      case 'synthesis':
+        return 'Établis une synthèse opérationnelle du courriel ou du fil : liste les actions que je dois effectuer, les réponses que je dois envoyer, les échéances, les décisions attendues et les points à clarifier. Distingue clairement les actions urgentes des simples informations.';
       case 'learn':
         return `Observe les réponses rédigées par l’utilisateur dans ce fil. Relève uniquement les règles de rédaction réellement visibles et récurrentes. Distingue les règles certaines des simples hypothèses. Mémorise les règles suffisamment claires pour les prochaines réponses professionnelles.`;
       case 'raw':
@@ -712,7 +715,15 @@ if (location.hostname === 'to-do.live.com') {
   function buildPrompt(mail, action, settings, extraInstruction = '') {
     const extra = cleanText(extraInstruction);
     const baseInstruction = actionInstruction(action);
-    const instruction = [baseInstruction, extra].filter(Boolean).join('\n');
+    const reflectionLabels = {
+      quick: 'rapide : va à l’essentiel en peu de points',
+      standard: 'standard : analyse structurée et concise',
+      deep: 'approfondi : examine les implications, dépendances et ambiguïtés'
+    };
+    const reflectionInstruction = reflectionLabels[settings.reflectionLevel]
+      ? `NIVEAU DE RÉFLEXION DEMANDÉ : ${reflectionLabels[settings.reflectionLevel]}.`
+      : '';
+    const instruction = [baseInstruction, reflectionInstruction, extra].filter(Boolean).join('\n');
     const parts = [];
 
     if (instruction) parts.push(instruction);
@@ -872,9 +883,7 @@ ${mail.body}`);
 
       currentMail = mail;
       ui.renderMail(mail);
-      if (force) {
-        ui.setStatus(`Courrier actualisé et figé (${mail.body.length.toLocaleString('fr-FR')} caractères).`);
-      }
+      if (force) ui.setStatus('');
     }, force ? 20 : 700);
   }
 
@@ -1140,6 +1149,15 @@ ${mail.body}`);
         border-top: 1px solid #eceef0;
         padding-top: 7px;
       }
+      .shortcut-note {
+        background: white;
+        border: 1px solid #d6d9dd;
+        border-radius: 8px;
+        padding: 8px 9px;
+        color: #444;
+        font-size: 12px;
+        white-space: pre-line;
+      }
       #response-section[hidden] { display: none; }
       #response-text { min-height: 180px; white-space: pre-wrap; }
       .response-source { margin: 0 0 7px; color: #555; font-size: 11px; overflow-wrap: anywhere; }
@@ -1274,6 +1292,15 @@ ${mail.body}`);
     refresh.textContent = 'Actualiser la détection';
     mailSection.append(mailLabel, mailCard, refresh);
 
+    const shortcutSection = document.createElement('div');
+    shortcutSection.className = 'section';
+    const shortcutLabel = document.createElement('label');
+    shortcutLabel.textContent = 'Raccourcis Outlook';
+    const shortcutNote = document.createElement('div');
+    shortcutNote.className = 'shortcut-note';
+    shortcutNote.textContent = 'E — Archiver\nB — Mettre en attente';
+    shortcutSection.append(shortcutLabel, shortcutNote);
+
     const extraSection = document.createElement('div');
     extraSection.className = 'section';
     const extraLabel = document.createElement('label');
@@ -1298,6 +1325,7 @@ ${mail.body}`);
       makeActionButton('Préparer une réponse', 'reply'),
       makeActionButton('Envoyer sans consigne', 'raw', true),
       makeActionButton('Résumer', 'summary', true),
+      makeActionButton('Synthèse', 'synthesis', true),
       makeActionButton('Observer mes réponses', 'learn', true)
     );
 
@@ -1350,6 +1378,25 @@ ${mail.body}`);
     const autoSendCheck = makeCheck('autoSend', 'Envoyer automatiquement dans ChatGPT');
     const reserveSpaceCheck = makeCheck('reserveSpace', 'Réserver la place dans Outlook (évite de masquer le courrier)');
 
+    const reflectionLabel = document.createElement('label');
+    reflectionLabel.htmlFor = 'reflectionLevel';
+    reflectionLabel.textContent = 'Niveau de réflexion demandé';
+    const reflectionLevel = document.createElement('select');
+    reflectionLevel.id = 'reflectionLevel';
+    [
+      ['quick', 'Rapide'],
+      ['standard', 'Standard'],
+      ['deep', 'Approfondi']
+    ].forEach(([value, text]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      reflectionLevel.appendChild(option);
+    });
+    const reflectionHelp = document.createElement('div');
+    reflectionHelp.className = 'privacy';
+    reflectionHelp.textContent = 'Ce réglage formule le niveau demandé dans le prompt ; il ne force pas un paramètre interne de ChatGPT.';
+
     const rangeRow = document.createElement('div');
     rangeRow.className = 'range-row';
     const widthRange = document.createElement('input');
@@ -1370,11 +1417,14 @@ ${mail.body}`);
       popupWindowCheck.label,
       autoSendCheck.label,
       reserveSpaceCheck.label,
+      reflectionLabel,
+      reflectionLevel,
+      reflectionHelp,
       rangeRow,
       privacy
     );
 
-    main.append(profileSection, mailSection, extraSection, buttonSection, responseSection, optionsSection);
+    main.append(profileSection, mailSection, shortcutSection, extraSection, buttonSection, responseSection, optionsSection);
 
     const status = document.createElement('div');
     status.id = 'status';
@@ -1395,6 +1445,7 @@ ${mail.body}`);
     popupWindow.checked = settings.popupWindow;
     autoSend.checked = settings.autoSend;
     reserveSpace.checked = settings.reserveSpace !== false;
+    reflectionLevel.value = settings.reflectionLevel || 'standard';
     widthRange.value = String(Math.max(300, Math.min(Number(settings.width) || 350, 520)));
     widthValue.textContent = `${widthRange.value} px`;
 
@@ -1410,6 +1461,7 @@ ${mail.body}`);
           includeThread: includeThread.checked,
           popupWindow: popupWindow.checked,
           autoSend: autoSend.checked,
+          reflectionLevel: reflectionLevel.value,
           reserveSpace: reserveSpace.checked,
           width: Number(widthRange.value) || 350
         };
@@ -1457,7 +1509,7 @@ ${mail.body}`);
       if (!collapsed) scheduleRefresh(ui, true);
     });
 
-    [profile, includeThread, popupWindow, autoSend, reserveSpace].forEach((element) => {
+    [profile, includeThread, popupWindow, autoSend, reserveSpace, reflectionLevel].forEach((element) => {
       element.addEventListener('change', async () => {
         await ui.saveSettings();
         if (element === includeThread) scheduleRefresh(ui, true);
@@ -1887,10 +1939,10 @@ ${mail.body}`);
     installChatGPTReceiver();
   }
 })();
-+// ==UserScript==
+// ==UserScript==
 // @name         BHVP – Volet Outlook vers ChatGPT
 // @namespace    bhvp-outlook-chatgpt
-// @version      1.3.3
+// @version      1.3.4
 // @description  Envoie le courrier visible vers ChatGPT, récupère automatiquement sa réponse et peut l’insérer dans un brouillon Outlook.
 // @homepageURL  https://github.com/GLAD1981/Tampermonkey
 // @updateURL    https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
@@ -1915,7 +1967,7 @@ ${mail.body}`);
 
   const HOST_ID = 'bhvp-outlook-panel-host';
   const RETURN_BUTTON_ID = 'bhvp-return-to-outlook';
-  const PATCH_MARKER = 'bhvp-simple-ui-v133';
+  const PATCH_MARKER = 'bhvp-simple-ui-v134';
 
   function removeManualReturnButton() {
     document.getElementById(RETURN_BUTTON_ID)?.remove();
@@ -1978,7 +2030,7 @@ ${mail.body}`);
     if (!panel || !main) return false;
 
     const version = shadow.querySelector('.version');
-    if (version) version.textContent = 'v1.3.3';
+    if (version) version.textContent = 'v1.3.4';
 
     const profile = shadow.getElementById('profile');
     profile?.closest('.section')?.remove();
@@ -2000,6 +2052,7 @@ ${mail.body}`);
     const replyOriginal = shadow.querySelector('button[data-action="reply"]');
     const rawOriginal = shadow.querySelector('button[data-action="raw"]');
     const summaryOriginal = shadow.querySelector('button[data-action="summary"]');
+    const synthesisOriginal = shadow.querySelector('button[data-action="synthesis"]');
     const learnButton = shadow.querySelector('button[data-action="learn"]');
     const extra = shadow.getElementById('extra');
     const buttons = replyOriginal?.parentElement;
@@ -2017,7 +2070,7 @@ ${mail.body}`);
       rawOriginal.hidden = true;
       summaryOriginal?.remove();
       buttons.prepend(replyButton);
-      buttons.style.gridTemplateColumns = learnButton ? '1fr 1fr' : '1fr';
+      buttons.style.gridTemplateColumns = '1fr 1fr';
     } else {
       summaryOriginal?.remove();
       rawOriginal?.remove();

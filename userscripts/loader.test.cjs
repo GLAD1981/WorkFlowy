@@ -307,3 +307,12 @@ test('recycles in app mode when the native root is an object', async () => {
   await recycle.listeners.click();
   assert.deepEqual(completed, [leaf]);
 });
+
+test('keeps the Outlook BHVP enhancements in the embedded loader', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'loader.user.js'), 'utf8');
+  assert.match(source, /BHVP[\s\S]*@version\s+1\.3\.4/);
+  assert.match(source, /Raccourcis Outlook/);
+  assert.match(source, /makeActionButton\('Synthèse', 'synthesis'/);
+  assert.match(source, /reflectionLevel/);
+  assert.doesNotMatch(source, /Courrier actualisé et figé/);
+});

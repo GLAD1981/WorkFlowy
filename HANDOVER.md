@@ -1,5 +1,20 @@
 # Handover
 
+## 2026-09-07 — état de reprise multi-PC
+
+- Dépôt canonique : `https://github.com/GLAD1981/WorkFlowy.git` (privé),
+  branche canonique : `main`.
+- Dernier état fonctionnel publié avant cette note : `f14b919`
+  (`feat: tidy outlook reflection controls`).
+- Clone de travail de ce PC : `C:\Users\Guillaume\Code\WorkFlowy`.
+  Sur un autre PC, repartir du dépôt GitHub dans un clone local stable, puis
+  travailler sur `main` et publier les modifications depuis ce clone.
+- Le loader Tampermonkey conserve son URL stable sur `main` :
+  `https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js`.
+- Validation de reprise à exécuter après un nouveau clone :
+  `node --check userscripts/loader.user.js` puis
+  `node --test userscripts/loader.test.cjs`.
+
 ## 2026-09-04 — routage History vers les films
 
 - Le loader public `userscripts/loader.user.js` est la source distribuée à

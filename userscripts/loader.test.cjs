@@ -260,7 +260,14 @@ test('copies visible Microsoft To Do items as WorkFlowy lines', () => {
     querySelector: () => null,
     querySelectorAll: () => [task('Lait'), task('Pain'), task('Lait')],
     createElement: tagName => ({
-      tagName, style: {}, attributes: {}, children: [], textContent: '',
+      tagName,
+      style: {
+        setProperty(name, value, priority) {
+          this[name] = value;
+          this[`${name}Priority`] = priority;
+        }
+      },
+      attributes: {}, children: [], textContent: '',
       setAttribute(name, value) { this.attributes[name] = value; },
       addEventListener(name, callback) { this.listeners = this.listeners || {}; this.listeners[name] = callback; },
       appendChild(element) { this.children.push(element); }
@@ -273,6 +280,39 @@ test('copies visible Microsoft To Do items as WorkFlowy lines', () => {
   const button = elements.find(element => element.attributes['data-workflowy-todo-export'] !== undefined);
   button.listeners.click();
   assert.equal(clipboard, 'text:Lait\nPain');
+});
+
+test('keeps the To Do exporter button compact above the To Do layout', () => {
+  const elements = [];
+  const document = {
+    body: { appendChild: element => elements.push(element) },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    createElement: tagName => ({
+      tagName,
+      style: {
+        setProperty(name, value, priority) {
+          this[name] = value;
+          this[`${name}Priority`] = priority;
+        }
+      },
+      attributes: {},
+      setAttribute(name, value) { this.attributes[name] = value; },
+      addEventListener(name, callback) { this.listeners = this.listeners || {}; this.listeners[name] = callback; }
+    })
+  };
+  const installer = loadTodoInstaller({ document, setTimeout: () => {} });
+
+  installer();
+
+  const button = elements.find(element => element.attributes['data-workflowy-todo-export'] !== undefined);
+  assert.equal(button.style.position, 'fixed');
+  assert.equal(button.style.width, 'auto');
+  assert.equal(button.style.height, 'auto');
+  assert.equal(button.style.display, 'inline-block');
+  assert.equal(button.style.widthPriority, 'important');
+  assert.equal(button.style.heightPriority, 'important');
+  assert.equal(button.style.displayPriority, 'important');
 });
 
 test('recycles in app mode when the native root is an object', async () => {

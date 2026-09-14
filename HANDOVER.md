@@ -1,5 +1,18 @@
 # Handover
 
+## 2026-09-14 — bouton Microsoft To Do isolé
+
+- Version du loader : `3.8.2`.
+- Le bouton `Copier pour WorkFlowy` neutralise désormais les styles globaux de
+  Microsoft To Do avec une priorité explicite : position fixe en haut à droite,
+  taille automatique, affichage compact et aucune transformation.
+- La collecte des tâches et la copie dans le presse-papiers sont inchangées.
+- Validation : test ciblé de style — PASS ;
+  `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (9 tests) ;
+  `git diff --check` — PASS. Vérification visuelle réelle dans To Do :
+  NOT VALIDATED (pas d'accès à cette page dans cette session).
+
 ## 2026-09-14 — permissions Tampermonkey du volet Outlook
 
 - Version du loader : `3.8.1` ; BHVP intégré : `1.3.4`.

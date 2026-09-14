@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.8.1
+// @version      3.8.2
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -393,6 +393,14 @@ function installTodoExporter() {
     padding: '6px 10px', font: "14px 'Segoe UI', sans-serif", color: '#000',
     background: '#fff', border: '1px solid #bfbfbf', borderRadius: '0', cursor: 'pointer'
   });
+  [
+    ['position', 'fixed'], ['top', '12px'], ['right', '12px'],
+    ['bottom', 'auto'], ['left', 'auto'], ['z-index', '2147483647'],
+    ['display', 'inline-block'], ['width', 'auto'], ['min-width', '0'],
+    ['max-width', 'none'], ['height', 'auto'], ['min-height', '0'],
+    ['max-height', 'none'], ['margin', '0'], ['padding', '6px 10px'],
+    ['box-sizing', 'border-box'], ['transform', 'none']
+  ].forEach(([property, value]) => button.style.setProperty(property, value, 'important'));
   const status = document.createElement('span');
   Object.assign(status.style, {
     position: 'fixed', top: '48px', right: '12px', zIndex: '2147483647',

@@ -282,6 +282,39 @@ test('copies visible Microsoft To Do items as WorkFlowy lines', () => {
   assert.equal(clipboard, 'text:Lait\nPain');
 });
 
+test('copies To Do task titles without copying the navigation list', () => {
+  const elements = [];
+  const sidebarItem = { textContent: 'Ma journée', querySelector: () => null };
+  const taskRow = textContent => ({ textContent, querySelector: () => null });
+  const taskTitle = textContent => ({ textContent });
+  const document = {
+    body: { appendChild: element => elements.push(element) },
+    querySelector: () => null,
+    querySelectorAll: selector => selector.includes('[role="listitem"]')
+      ? [sidebarItem, taskRow('Lait'), taskRow('Pain')]
+      : [taskTitle('Lait'), taskTitle('Pain')],
+    createElement: tagName => ({
+      tagName,
+      style: { setProperty() {} },
+      attributes: {},
+      setAttribute(name, value) { this.attributes[name] = value; },
+      addEventListener(name, callback) { this.listeners = this.listeners || {}; this.listeners[name] = callback; }
+    })
+  };
+  let clipboard = '';
+  const installer = loadTodoInstaller({
+    document,
+    GM_setClipboard: (value, type) => { clipboard = `${type}:${value}`; },
+    setTimeout: () => {}
+  });
+
+  installer();
+  const button = elements.find(element => element.attributes['data-workflowy-todo-export'] !== undefined);
+  button.listeners.click();
+
+  assert.equal(clipboard, 'text:Lait\nPain');
+});
+
 test('keeps the To Do exporter button compact above the To Do layout', () => {
   const elements = [];
   const document = {

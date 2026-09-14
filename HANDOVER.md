@@ -1,5 +1,17 @@
 # Handover
 
+## 2026-09-14 — export de la liste Microsoft To Do
+
+- Version du loader : `3.8.3`.
+- L’export ne parcourt plus les éléments génériques de liste de la page, qui
+  incluaient la navigation latérale (`Ma journée`, etc.). Il ne retient que
+  les titres de tâches identifiés dans le panneau de la liste ouverte.
+- Validation : test de non-copie de la navigation — PASS ;
+  `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (10 tests) ;
+  `git diff --check` — PASS. Vérification réelle de la liste Courses :
+  NOT VALIDATED (pas d'accès à cette page dans cette session).
+
 ## 2026-09-14 — bouton Microsoft To Do isolé
 
 - Version du loader : `3.8.2`.

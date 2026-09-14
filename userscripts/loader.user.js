@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.8.2
+// @version      3.8.3
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -407,11 +407,13 @@ function installTodoExporter() {
     font: "12px 'Segoe UI', sans-serif", color: '#000', background: '#fff'
   });
   function taskNames() {
-    const candidates = [...document.querySelectorAll('[role="listitem"], [data-testid*="task"], li')];
-    const names = candidates.map(element => {
-      const title = element.querySelector('[contenteditable="true"], [data-testid*="title"], .taskItem-title');
-      return (title?.textContent || element.textContent || '').replace(/\s+/g, ' ').trim();
-    }).filter(Boolean);
+    const candidates = [...document.querySelectorAll(
+      '[data-testid*="task"] [contenteditable="true"], [data-testid*="task"][contenteditable="true"], .taskItem-title'
+    )];
+    const names = candidates
+      .filter(element => !element.closest?.('nav, [role="navigation"], aside'))
+      .map(element => (element.textContent || '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
     return [...new Set(names)];
   }
   button.addEventListener('click', () => {

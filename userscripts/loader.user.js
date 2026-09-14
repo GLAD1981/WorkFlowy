@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Personal script loader
 // @namespace    personal-script-loader
-// @version      3.8.0
+// @version      3.8.1
 // @updateURL   https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @downloadURL https://raw.githubusercontent.com/GLAD1981/WorkFlowy/main/userscripts/loader.user.js
 // @match        https://workflowy.com/*
@@ -12,6 +12,10 @@
 // @match        https://outlook.live.com/*
 // @match        https://chatgpt.com/*
 // @grant        GM.xmlHttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @grant        GM_addValueChangeListener
 // @grant        GM_setClipboard
 // @grant        unsafeWindow
 // @connect      api.open-meteo.com

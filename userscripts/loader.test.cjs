@@ -318,3 +318,17 @@ test('keeps the Outlook BHVP enhancements in the embedded loader', () => {
   assert.ok(source.indexOf("extraSection, reflectionSection, buttonSection") >= 0);
   assert.doesNotMatch(source, /Courrier actualisé et figé/);
 });
+
+test('declares the Outlook BHVP storage APIs in the loader metadata', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'loader.user.js'), 'utf8');
+  const metadata = source.slice(0, source.indexOf('// ==/UserScript=='));
+
+  for (const grant of [
+    'GM_setValue',
+    'GM_getValue',
+    'GM_deleteValue',
+    'GM_addValueChangeListener'
+  ]) {
+    assert.match(metadata, new RegExp(`@grant\\s+${grant}`));
+  }
+});

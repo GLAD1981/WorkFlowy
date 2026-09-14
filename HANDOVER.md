@@ -1,5 +1,19 @@
 # Handover
 
+## 2026-09-14 — permissions Tampermonkey du volet Outlook
+
+- Version du loader : `3.8.1` ; BHVP intégré : `1.3.4`.
+- Le premier en-tête userscript déclare maintenant les API de stockage et
+  d'écoute requises par BHVP : `GM_setValue`, `GM_getValue`,
+  `GM_deleteValue` et `GM_addValueChangeListener`.
+- Cette correction résout l'arrêt du volet avec le message
+  `GM_addValueChangeListener is not defined`. Les en-têtes secondaires du
+  fichier ne sont pas interprétés par Tampermonkey.
+- Validation : test ciblé des permissions — PASS ;
+  `node --check userscripts/loader.user.js` — PASS ;
+  `node --test userscripts/loader.test.cjs` — PASS (8 tests) ;
+  `git diff --check` — PASS.
+
 ## 2026-09-07 — état de reprise multi-PC
 
 - Dépôt canonique : `https://github.com/GLAD1981/WorkFlowy.git` (privé),
